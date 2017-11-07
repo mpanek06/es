@@ -8,8 +8,9 @@ void SysTickConfiguration();
 void GPIOConfiguration();
 void TIMConfiguration();
 void SPIConfiguration();
-
-void SPI_Tx(uint16_t data);
+void LCD_Config(void);
+void LCD_GPIO_Config(void);
+void SPI_Tx(uint8_t data);
 uint16_t SPI_Rx(void);
 
 int main(void)
@@ -19,7 +20,7 @@ int main(void)
 	GPIOConfiguration();
 	TIMConfiguration();
 	SPIConfiguration();
-    ili9341_Init();
+	LCD_Config();
 
 	while (1);
 
@@ -65,9 +66,6 @@ void SysClockConfiguration()
 	RCC->CFGR |= RCC_CFGR_SW_PLL;
 	while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL);
 
-	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN | RCC_AHB1ENR_GPIOCEN
-				  | RCC_AHB1ENR_GPIODEN | RCC_AHB1ENR_GPIOEEN
-				  | RCC_AHB1ENR_GPIOGEN | RCC_AHB1ENR_GPIOFEN;
 	RCC->APB2ENR |= RCC_APB2ENR_TIM1EN | RCC_APB2ENR_SPI5EN;
 	__DSB();
 }
@@ -83,6 +81,12 @@ void SysTickConfiguration()
 
 void GPIOConfiguration()
 {
+
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN | RCC_AHB1ENR_GPIOBEN
+				  | RCC_AHB1ENR_GPIOCEN | RCC_AHB1ENR_GPIODEN
+				  | RCC_AHB1ENR_GPIOEEN | RCC_AHB1ENR_GPIOFEN
+				  | RCC_AHB1ENR_GPIOGEN;
+
 	// PG13, PG14 -Blinking LEDs
 	GPIOG->MODER |= (1<<28);
 	GPIOG->MODER |= (1<<26);
@@ -144,7 +148,7 @@ void SPIConfiguration()
 	SPI5->CR1 = SPI_CR1_SPE | SPI_CR1_BR_0 | SPI_CR1_BR_1 | SPI_CR1_SSM | SPI_CR1_SSI | SPI_CR1_MSTR;
 }
 
-void SPI_Tx(uint16_t data)
+void SPI_Tx(uint8_t data)
 {
 //	while( !(SPI5->SR & SPI_SR_TXE) );
 //	while( !(SPI5->SR & (SPI_SR_TXE) ));
@@ -333,5 +337,106 @@ void LCD_IO_Init(void)
 {
     LCD_CS_LOW();
     LCD_CS_HIGH();
+}
+
+void LCD_Config(void)
+{
+    ili9341_Init();
+
+    RCC->APB2ENR |= RCC_APB2ENR_LTDCEN;
+
+    //LTDC Global Control Register
+    LTDC->GCR |= LTDC_GCR_LTDCEN;
+
+    //LTDC Synchronization Size Configuration Register
+    LTDC->SSCR |= 9ul<<16 | 1ul<<0;
+
+    //LTDC Back Porch Configuration Register
+    LTDC->BPCR |= 29ul<<16 | 3ul<<0;
+
+    //LTDC Active Width Configuration Register
+    LTDC->AWCR |= 269ul<<16 | 323ul<<0;
+
+    //LTDC Total Width Configuration Register
+    LTDC->TWCR |= 279ul<<16 | 327ul<<0;
+
+    //LTDC Background Color Configuration Register RGB
+    LTDC->BCCR |= 0xfful<<16 | 0x00ul<<8 | 0x00ul<<0;
+}
+
+void LCD_GPIO_Config(void)
+{
+
+	  /*
+	   +------------------------+-----------------------+----------------------------+
+	   +                       LCD pins assignment                                   +
+	   +------------------------+-----------------------+----------------------------+
+	   |  LCD_TFT R2 <-> PC.10  |  LCD_TFT G2 <-> PA.06 |  LCD_TFT B2 <-> PD.06      |
+	   |  LCD_TFT R3 <-> PB.00  |  LCD_TFT G3 <-> PG.10 |  LCD_TFT B3 <-> PG.11      |
+	   |  LCD_TFT R4 <-> PA.11  |  LCD_TFT G4 <-> PB.10 |  LCD_TFT B4 <-> PG.12      |
+	   |  LCD_TFT R5 <-> PA.12  |  LCD_TFT G5 <-> PB.11 |  LCD_TFT B5 <-> PA.03      |
+	   |  LCD_TFT R6 <-> PB.01  |  LCD_TFT G6 <-> PC.07 |  LCD_TFT B6 <-> PB.08      |
+	   |  LCD_TFT R7 <-> PG.06  |  LCD_TFT G7 <-> PD.03 |  LCD_TFT B7 <-> PB.09      |
+	   -------------------------------------------------------------------------------
+	            |  LCD_TFT HSYNC <-> PC.06  | LCDTFT VSYNC <->  PA.04 |
+	            |  LCD_TFT CLK   <-> PG.07  | LCD_TFT DE   <->  PF.10 |
+	             -----------------------------------------------------
+
+	  */
+
+	/* LTDC pins configuraiton: PA3 -- 12 */
+	GPIOA->MODER   |= GPIO_MODER_MODE3_1 | GPIO_MODER_MODE4_1 | GPIO_MODER_MODE6_1 |
+			          GPIO_MODER_MODE11_1 | GPIO_MODER_MODE12_1;
+
+	GPIOA->OSPEEDR  |= GPIO_OSPEEDR_OSPEED3_1  | GPIO_OSPEEDR_OSPEED4_1 | GPIO_OSPEEDR_OSPEED6_1
+			        | GPIO_OSPEEDR_OSPEED11_1 | GPIO_OSPEEDR_OSPEED12_1 ;
+
+	GPIOA->AFR[0]  |= 14ul<<12 | 14ul<<16 | 14ul<<24 ;
+	GPIOA->AFR[1]  |= 14ul<<12 | 14ul<<16 ;
+
+
+	/* LTDC pins configuraiton: PB8 -- 11 */
+	GPIOB->MODER   |= GPIO_MODER_MODE8_1 | GPIO_MODER_MODE9_1 | GPIO_MODER_MODE10_1 | GPIO_MODER_MODE11_1;
+	GPIOB->OSPEEDR |= GPIO_OSPEEDR_OSPEED8_1  | GPIO_OSPEEDR_OSPEED9_1 | GPIO_OSPEEDR_OSPEED10_1 | GPIO_OSPEEDR_OSPEED11_1;
+	GPIOB->AFR[1]  |= 14ul<<0 | 14ul<<4 | 14ul<<8 | 14ul<<12;
+
+
+	/* LTDC pins configuraiton: PC6 -- 10 */
+	GPIOC->MODER   |= GPIO_MODER_MODE6_1 | GPIO_MODER_MODE7_1 | GPIO_MODER_MODE10_1;
+	GPIOC->OSPEEDR |= GPIO_OSPEEDR_OSPEED6_1  | GPIO_OSPEEDR_OSPEED7_1 | GPIO_OSPEEDR_OSPEED10_1;
+	GPIOC->AFR[0]  |= 14ul<<24 | 14ul<<28 ;
+	GPIOC->AFR[1]  |= 14ul<<8;
+
+	/* LTDC pins configuraiton: PD3 -- 6 */
+	GPIOD->MODER   |=  GPIO_MODER_MODE3_1 | GPIO_MODER_MODE6_1;
+	GPIOD->OSPEEDR |=  GPIO_OSPEEDR_OSPEED3_1 | GPIO_OSPEEDR_OSPEED6_1;
+	GPIOD->AFR[0]  |= 14ul<<12 | 14ul<<24;
+
+
+	/* LTDC pins configuraiton: PF10 */
+	GPIOF->MODER   |= GPIO_MODER_MODE10_1;
+	GPIOF->OSPEEDR |= GPIO_OSPEEDR_OSPEED10_1;
+	GPIOF->AFR[1]  |= 14ul<<8;
+
+
+	/* LTDC pins configuraiton: PG6 -- 11 */
+	GPIOG->MODER   |= GPIO_MODER_MODE6_1 | GPIO_MODER_MODE7_1 | GPIO_MODER_MODE11_1;
+	GPIOG->OSPEEDR |= GPIO_OSPEEDR_OSPEED6_1 | GPIO_OSPEEDR_OSPEED7_1 | GPIO_OSPEEDR_OSPEED11_1;
+	GPIOG->AFR[0]  |= 14ul<<24 | 14ul<<28 ;
+	GPIOG->AFR[1]  |= 14ul<<12;
+
+
+	/* LTDC pins configuraiton: PB0 -- 1 */
+	//	GPIO_Init_Structure.Alternate = GPIO_AF9_LTDC;
+	GPIOB->MODER   |= GPIO_MODER_MODE0_1 | GPIO_MODER_MODE1_1 ;
+	GPIOB->OSPEEDR |= GPIO_OSPEEDR_OSPEED0_1 | GPIO_OSPEEDR_OSPEED1_1;
+	GPIOB->AFR[0]  |= 9ul<<0 | 9ul<<4 ;
+
+	/* LTDC pins configuraiton: PG10 -- 12 */
+	//	GPIO_Init_Structure.Alternate = GPIO_AF9_LTDC;
+	GPIOG->MODER   |= GPIO_MODER_MODE10_1 | GPIO_MODER_MODE12_1;
+	GPIOG->OSPEEDR |= GPIO_OSPEEDR_OSPEED10_1 | GPIO_OSPEEDR_OSPEED12_1;
+	GPIOG->AFR[1]  |= 9ul<<8 | 9ul<<16;
+
 }
 

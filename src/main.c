@@ -1,8 +1,7 @@
 #include "stm32f4xx.h"
 #include "ili9341.h"
 
-volatile uint8_t tmp = 0;
-volatile uint8_t flag = 0;
+volatile uint32_t tmp = 0;
 
 void SysClockConfiguration();
 void SysTickConfiguration();
@@ -22,16 +21,7 @@ int main(void)
 	SPIConfiguration();
     ili9341_Init();
 
-	uint16_t tst_data = 0xff12;
-
-	while (1)
-	{
-		if(1 == flag)
-		{
-//			SPI_Tx(tst_data);
-			flag = 0;
-		}
-	}
+	while (1);
 
 	return 0;
 } /* main */
@@ -40,12 +30,13 @@ void SysTick_Handler()
 {
 
 	tmp += 1;
-	if(0 == tmp%2)
+	if(0 == tmp%10)
 	{
-		flag = 1;
 		GPIOG->ODR ^= GPIO_ODR_ODR_13;
 	}
-
+	else
+	{
+	}
 	GPIOG->ODR ^= GPIO_ODR_ODR_14;
 }
 
@@ -120,16 +111,14 @@ void GPIOConfiguration()
 	GPIOF->AFR[1] |=  GPIO_AFRH_AFRH0_0 | GPIO_AFRH_AFRH0_2 | GPIO_AFRH_AFRH1_0 | GPIO_AFRH_AFRH1_2 ;
 
 
-
 	//LCD
 	//WRX, RDX
 	GPIOD->MODER |= GPIO_MODER_MODE13_0 | GPIO_MODER_MODE12_0;
 	GPIOD->OSPEEDR |= GPIO_OSPEEDR_OSPEED12_1  | GPIO_OSPEEDR_OSPEED13_1;
 
-	//WRX, RDX, NCS
+	//NCS
 	GPIOC->MODER |= GPIO_MODER_MODE2_0;
-	GPIOD->OSPEEDR |= GPIO_OSPEEDR_OSPEED2_1 ;
-
+	GPIOC->OSPEEDR |= GPIO_OSPEEDR_OSPEED2_1;
 }
 
 void TIMConfiguration()
@@ -157,8 +146,16 @@ void SPIConfiguration()
 
 void SPI_Tx(uint16_t data)
 {
-	while( !(SPI5->SR & SPI_SR_TXE) );
+//	while( !(SPI5->SR & SPI_SR_TXE) );
+//	while( !(SPI5->SR & (SPI_SR_TXE) ));
+//	SPI5->DR = data;
+//
+//
+//	while( !(SPI5->SR & (SPI_SR_BSY) ));
+
+	while( !(SPI5->SR & (SPI_SR_TXE) ));
 	SPI5->DR = data;
+	while( (SPI5->SR & (SPI_SR_BSY) ));
 }
 
 uint16_t SPI_Rx()
@@ -250,7 +247,7 @@ void ili9341_Init(void)
 
   ili9341_WriteReg(LCD_GRAM);
 //  LCD_Delay(200);
-  for(volatile uint8_t z =0; z<100000; ++z ){};
+  for(volatile uint32_t z =0; z<2600000; ++z ){};
 
   ili9341_WriteReg(LCD_GAMMA);
   ili9341_WriteData(0x01);
@@ -289,7 +286,7 @@ void ili9341_Init(void)
   ili9341_WriteData(0x0F);
 
   ili9341_WriteReg(LCD_SLEEP_OUT);
-  for(volatile uint8_t z =0; z<100000; ++z ){};
+  for(volatile uint32_t z =0; z<2600000; ++z ){};
   	ili9341_WriteReg(LCD_DISPLAY_ON);
 //  /* GRAM start writing */
   ili9341_WriteReg(LCD_GRAM);

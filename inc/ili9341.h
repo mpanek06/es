@@ -146,8 +146,8 @@ uint32_t LCD_IO_ReadData(uint16_t RegValue, uint8_t ReadSize);
 
 /*################################ LCD #######################################*/
 /* Chip Select macro definition */
-#define LCD_CS_LOW()       {}//GPIOC->ODR &= ~(GPIO_ODR_OD2)
-#define LCD_CS_HIGH()      {}//GPIOC->ODR |=  (GPIO_ODR_OD2)
+#define LCD_CS_LOW()       GPIOC->ODR &= ~(GPIO_ODR_OD2)
+#define LCD_CS_HIGH()      GPIOC->ODR |=  (GPIO_ODR_OD2)
 
 /* Set WRX High to send data */
 #define LCD_WRX_LOW()      GPIOD->ODR &= ~(GPIO_ODR_OD13)

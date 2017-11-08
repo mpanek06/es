@@ -9,6 +9,7 @@ void GPIOConfiguration();
 void TIMConfiguration();
 void SPIConfiguration();
 void LCD_Config(void);
+void LCD_Delay(uint8_t del);
 void LCD_GPIO_Config(void);
 void SPI_Tx(uint8_t data);
 uint16_t SPI_Rx(void);
@@ -20,6 +21,7 @@ int main(void)
 	GPIOConfiguration();
 	TIMConfiguration();
 	SPIConfiguration();
+	LCD_GPIO_Config();
 	LCD_Config();
 
 	while (1);
@@ -34,9 +36,6 @@ void SysTick_Handler()
 	if(0 == tmp%10)
 	{
 		GPIOG->ODR ^= GPIO_ODR_ODR_13;
-	}
-	else
-	{
 	}
 	GPIOG->ODR ^= GPIO_ODR_ODR_14;
 }
@@ -55,7 +54,7 @@ void SysClockConfiguration()
 
 	while (!(RCC->CR & RCC_CR_HSERDY));
 
-	RCC->CR |= RCC_CR_PLLON;
+	RCC->CR |= RCC_CR_PLLON | RCC_CR_PLLSAION;
 	RCC->CFGR = RCC_CFGR_PPRE1_DIV4 | RCC_CFGR_PPRE2_DIV2;
 
 	FLASH->ACR = FLASH_ACR_DCRST | FLASH_ACR_ICRST;
@@ -82,65 +81,65 @@ void SysTickConfiguration()
 void GPIOConfiguration()
 {
 
-	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN | RCC_AHB1ENR_GPIOBEN
+	RCC->AHB1ENR  |=RCC_AHB1ENR_GPIOAEN | RCC_AHB1ENR_GPIOBEN
 				  | RCC_AHB1ENR_GPIOCEN | RCC_AHB1ENR_GPIODEN
 				  | RCC_AHB1ENR_GPIOEEN | RCC_AHB1ENR_GPIOFEN
 				  | RCC_AHB1ENR_GPIOGEN;
 
 	// PG13, PG14 -Blinking LEDs
-	GPIOG->MODER |= (1<<28);
-	GPIOG->MODER |= (1<<26);
-	GPIOG->ODR |= (1<<13);
-	GPIOG->ODR |= (1<<14);
+	GPIOG->MODER  |= (1<<28);
+	GPIOG->MODER  |= (1<<26);
+	GPIOG->ODR    |= (1<<13);
+	GPIOG->ODR    |= (1<<14);
 
 	// PE9, PE11, PE13, PE14 - TIM1 PWM
-	GPIOE->MODER |= GPIO_MODER_MODE9_1 | GPIO_MODER_MODE11_1 | GPIO_MODER_MODE13_1 | GPIO_MODER_MODE14_1;
+	GPIOE->MODER   |= GPIO_MODER_MODE9_1 | GPIO_MODER_MODE11_1 | GPIO_MODER_MODE13_1 | GPIO_MODER_MODE14_1;
 	//pp mode
-	GPIOE->OTYPER |= GPIO_OTYPER_OT_9 | GPIO_OTYPER_OT_11 | GPIO_OTYPER_OT_13 | GPIO_OTYPER_OT_14 ;
-	GPIOE->PUPDR  |= GPIO_PUPDR_PUPD9_0 | GPIO_PUPDR_PUPD11_0 | GPIO_PUPDR_PUPD13_0 | GPIO_PUPDR_PUPD14_0;
+	GPIOE->OTYPER  |= GPIO_OTYPER_OT_9 | GPIO_OTYPER_OT_11 | GPIO_OTYPER_OT_13 | GPIO_OTYPER_OT_14 ;
+	GPIOE->PUPDR   |= GPIO_PUPDR_PUPD9_0 | GPIO_PUPDR_PUPD11_0 | GPIO_PUPDR_PUPD13_0 | GPIO_PUPDR_PUPD14_0;
 	//hight speed
 	GPIOE->OSPEEDR |= GPIO_OSPEEDR_OSPEED9_1  | GPIO_OSPEEDR_OSPEED11_1 | GPIO_OSPEEDR_OSPEED13_1 | GPIO_OSPEEDR_OSPEED14_1;
 
-	GPIOE->AFR[1] |=  GPIO_AFRH_AFRH1_0 | GPIO_AFRH_AFRH3_0 | GPIO_AFRH_AFRH5_0 | GPIO_AFRH_AFRH6_0 ;
+	GPIOE->AFR[1]  |=  GPIO_AFRH_AFRH1_0 | GPIO_AFRH_AFRH3_0 | GPIO_AFRH_AFRH5_0 | GPIO_AFRH_AFRH6_0 ;
 
 
 
 	//SPI
 	// PF7, PF8, PF9
-	GPIOF->MODER |= GPIO_MODER_MODE7_1 | GPIO_MODER_MODE8_1 | GPIO_MODER_MODE9_1 ;
+	GPIOF->MODER   |= GPIO_MODER_MODE7_1 | GPIO_MODER_MODE8_1 | GPIO_MODER_MODE9_1 ;
 	//hight speed
 	GPIOF->OSPEEDR |= GPIO_OSPEEDR_OSPEED7_0  | GPIO_OSPEEDR_OSPEED8_0 | GPIO_OSPEEDR_OSPEED9_0;
 
-	GPIOF->AFR[0] |=  GPIO_AFRH_AFRH7_0 | GPIO_AFRH_AFRH7_2 ;
-	GPIOF->AFR[1] |=  GPIO_AFRH_AFRH0_0 | GPIO_AFRH_AFRH0_2 | GPIO_AFRH_AFRH1_0 | GPIO_AFRH_AFRH1_2 ;
+	GPIOF->AFR[0]  |=  GPIO_AFRH_AFRH7_0 | GPIO_AFRH_AFRH7_2 ;
+	GPIOF->AFR[1]  |=  GPIO_AFRH_AFRH0_0 | GPIO_AFRH_AFRH0_2 | GPIO_AFRH_AFRH1_0 | GPIO_AFRH_AFRH1_2 ;
 
 
 	//LCD
 	//WRX, RDX
-	GPIOD->MODER |= GPIO_MODER_MODE13_0 | GPIO_MODER_MODE12_0;
+	GPIOD->MODER   |= GPIO_MODER_MODE13_0 | GPIO_MODER_MODE12_0;
 	GPIOD->OSPEEDR |= GPIO_OSPEEDR_OSPEED12_1  | GPIO_OSPEEDR_OSPEED13_1;
 
 	//NCS
-	GPIOC->MODER |= GPIO_MODER_MODE2_0;
+	GPIOC->MODER   |= GPIO_MODER_MODE2_0;
 	GPIOC->OSPEEDR |= GPIO_OSPEEDR_OSPEED2_1;
 }
 
 void TIMConfiguration()
 {
-	TIM1->CCMR1 = TIM_CCMR1_OC1PE | TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1;
+	TIM1->CCMR1  = TIM_CCMR1_OC1PE | TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1;
 	TIM1->CCMR1 |= TIM_CCMR1_OC2PE | TIM_CCMR1_OC2M_2 | TIM_CCMR1_OC2M_1;
 	TIM1->CCMR2 |= TIM_CCMR2_OC3PE | TIM_CCMR2_OC3M_2 | TIM_CCMR2_OC3M_1;
 	TIM1->CCMR2 |= TIM_CCMR2_OC4PE | TIM_CCMR2_OC4M_2 | TIM_CCMR2_OC4M_1;
 	TIM1->CCER = TIM_CCER_CC1E | TIM_CCER_CC2E | TIM_CCER_CC3E | TIM_CCER_CC4E;
 	TIM1->BDTR = TIM_BDTR_MOE;
-	TIM1->PSC = 167;
-	TIM1->ARR = 999;
+	TIM1->PSC  = 167;
+	TIM1->ARR  = 999;
 	TIM1->CCR1 = 800;
 	TIM1->CCR2 = 600;
 	TIM1->CCR3 = 400;
 	TIM1->CCR4 = 200;
-	TIM1->EGR = TIM_EGR_UG;
-	TIM1->CR1 = TIM_CR1_ARPE | TIM_CR1_CEN;
+	TIM1->EGR  = TIM_EGR_UG;
+	TIM1->CR1  = TIM_CR1_ARPE | TIM_CR1_CEN;
 }
 
 void SPIConfiguration()
@@ -150,15 +149,8 @@ void SPIConfiguration()
 
 void SPI_Tx(uint8_t data)
 {
-//	while( !(SPI5->SR & SPI_SR_TXE) );
-//	while( !(SPI5->SR & (SPI_SR_TXE) ));
-//	SPI5->DR = data;
-//
-//
-//	while( !(SPI5->SR & (SPI_SR_BSY) ));
-
-	while( !(SPI5->SR & (SPI_SR_TXE) ));
 	SPI5->DR = data;
+	while( !(SPI5->SR & (SPI_SR_TXE) ));
 	while( (SPI5->SR & (SPI_SR_BSY) ));
 }
 
@@ -250,8 +242,7 @@ void ili9341_Init(void)
   ili9341_WriteData(0x06);
 
   ili9341_WriteReg(LCD_GRAM);
-//  LCD_Delay(200);
-  for(volatile uint32_t z =0; z<2600000; ++z ){};
+  LCD_Delay(200);
 
   ili9341_WriteReg(LCD_GAMMA);
   ili9341_WriteData(0x01);
@@ -290,8 +281,8 @@ void ili9341_Init(void)
   ili9341_WriteData(0x0F);
 
   ili9341_WriteReg(LCD_SLEEP_OUT);
-  for(volatile uint32_t z =0; z<2600000; ++z ){};
-  	ili9341_WriteReg(LCD_DISPLAY_ON);
+  LCD_Delay(200);
+  ili9341_WriteReg(LCD_DISPLAY_ON);
 //  /* GRAM start writing */
   ili9341_WriteReg(LCD_GRAM);
 }
@@ -339,14 +330,16 @@ void LCD_IO_Init(void)
     LCD_CS_HIGH();
 }
 
+void LCD_Delay(uint8_t del)
+{
+	for(volatile uint32_t z =0; z<2600000; ++z ){};
+}
+
 void LCD_Config(void)
 {
     ili9341_Init();
 
     RCC->APB2ENR |= RCC_APB2ENR_LTDCEN;
-
-    //LTDC Global Control Register
-    LTDC->GCR |= LTDC_GCR_LTDCEN;
 
     //LTDC Synchronization Size Configuration Register
     LTDC->SSCR |= 9ul<<16 | 1ul<<0;
@@ -361,7 +354,10 @@ void LCD_Config(void)
     LTDC->TWCR |= 279ul<<16 | 327ul<<0;
 
     //LTDC Background Color Configuration Register RGB
-    LTDC->BCCR |= 0xfful<<16 | 0x00ul<<8 | 0x00ul<<0;
+    LTDC->BCCR |= 0xfful<<16 | 0x00ul<<8 | 0xfful<<0;
+
+    //LTDC Global Control Register
+    LTDC->GCR |= LTDC_GCR_LTDCEN;
 }
 
 void LCD_GPIO_Config(void)
@@ -388,8 +384,8 @@ void LCD_GPIO_Config(void)
 	GPIOA->MODER   |= GPIO_MODER_MODE3_1 | GPIO_MODER_MODE4_1 | GPIO_MODER_MODE6_1 |
 			          GPIO_MODER_MODE11_1 | GPIO_MODER_MODE12_1;
 
-	GPIOA->OSPEEDR  |= GPIO_OSPEEDR_OSPEED3_1  | GPIO_OSPEEDR_OSPEED4_1 | GPIO_OSPEEDR_OSPEED6_1
-			        | GPIO_OSPEEDR_OSPEED11_1 | GPIO_OSPEEDR_OSPEED12_1 ;
+	GPIOA->OSPEEDR |= GPIO_OSPEEDR_OSPEED3_1  | GPIO_OSPEEDR_OSPEED4_1 | GPIO_OSPEEDR_OSPEED6_1
+			       | GPIO_OSPEEDR_OSPEED11_1 | GPIO_OSPEEDR_OSPEED12_1 ;
 
 	GPIOA->AFR[0]  |= 14ul<<12 | 14ul<<16 | 14ul<<24 ;
 	GPIOA->AFR[1]  |= 14ul<<12 | 14ul<<16 ;
@@ -431,6 +427,7 @@ void LCD_GPIO_Config(void)
 	GPIOB->MODER   |= GPIO_MODER_MODE0_1 | GPIO_MODER_MODE1_1 ;
 	GPIOB->OSPEEDR |= GPIO_OSPEEDR_OSPEED0_1 | GPIO_OSPEEDR_OSPEED1_1;
 	GPIOB->AFR[0]  |= 9ul<<0 | 9ul<<4 ;
+
 
 	/* LTDC pins configuraiton: PG10 -- 12 */
 	//	GPIO_Init_Structure.Alternate = GPIO_AF9_LTDC;

@@ -3,26 +3,46 @@
 
 volatile uint32_t tmp = 0;
 
+#define GYRO_CS_LOW()      GPIOC->ODR &= ~(GPIO_ODR_OD1)
+#define GYRO_CS_HIGH()     GPIOC->ODR |=  (GPIO_ODR_OD1)
+
+
 void SysClockConfiguration();
 void SysTickConfiguration();
+
 void GPIOConfiguration();
+
 void TIMConfiguration();
+
 void SPIConfiguration();
+
 void LCD_Config(void);
 void LCD_Delay(uint8_t del);
 void LCD_GPIO_Config(void);
+
 void SPI_Tx(uint8_t data);
 uint16_t SPI_Rx(void);
+uint8_t SPI_TxRx(uint8_t data);
+
+void Gyro_Init();
+void Gyro_GPIO_Config();
+void GYRO_IO_Write(uint8_t* pBuffer, uint8_t WriteAddr);
 
 int main(void)
 {
 	SysClockConfiguration();
 	SysTickConfiguration();
+
 	GPIOConfiguration();
+
 	TIMConfiguration();
+
 	SPIConfiguration();
+
 	LCD_GPIO_Config();
 	LCD_Config();
+
+	Gyro_Init();
 
 	while (1);
 
@@ -162,6 +182,14 @@ uint16_t SPI_Rx()
 	data = SPI5->DR;
 	return data;
 }
+
+
+uint8_t SPI_TxRx(uint8_t data)
+{
+	SPI_Tx(data);
+	return SPI_Rx();
+}
+
 
 void ili9341_Init(void)
 {
@@ -437,3 +465,51 @@ void LCD_GPIO_Config(void)
 
 }
 
+#define L3GD20_CTRL_REG1_ADDR         0x20  /* Control register 1 */
+#define L3GD20_CTRL_REG2_ADDR         0x21  /* Control register 2 */
+#define L3GD20_CTRL_REG3_ADDR         0x22  /* Control register 3 */
+#define L3GD20_CTRL_REG4_ADDR         0x23  /* Control register 4 */
+#define L3GD20_CTRL_REG5_ADDR         0x24  /* Control register 5 */
+
+void GYRO_IO_Write(uint8_t* pBuffer, uint8_t WriteAddr)
+{
+  GYRO_CS_LOW();
+
+  SPI_TxRx(WriteAddr);
+
+  SPI_TxRx(*pBuffer);
+
+  GYRO_CS_HIGH();
+}
+
+void Gyro_Init()
+{
+	uint8_t ctrl = 0x00;
+	uint16_t initVals = 0x0000;
+
+
+	//(L3GD20_InitStructure.Power_Mode | L3GD20_InitStructure.Output_DataRate |
+    //L3GD20_InitStructure.Axes_Enable | L3GD20_InitStructure.Band_Width
+	initVals = (uint16_t) (0x08 | 0x00 | 0x07 | 0x30);
+
+//	L3GD20_InitStructure.BlockData_Update | L3GD20_InitStructure.Endianness |
+//                        L3GD20_InitStructure.Full_Scale) << 8
+	initVals |= (uint16_t) ((0x00 | 0x00 | 0x10) << 8);
+
+	Gyro_GPIO_Config();
+
+	/* Write value to MEMS CTRL_REG1 register */
+	ctrl = (uint8_t) initVals;
+	GYRO_IO_Write(&ctrl, L3GD20_CTRL_REG1_ADDR);
+
+	/* Write value to MEMS CTRL_REG4 register */
+	ctrl = (uint8_t) (initVals >> 8);
+	GYRO_IO_Write(&ctrl, L3GD20_CTRL_REG4_ADDR);
+}
+
+void Gyro_GPIO_Config()
+{
+	//CS - PC1
+	GPIOC->MODER   |= GPIO_MODER_MODE1_0;
+	GPIOC->OSPEEDR |= GPIO_OSPEEDR_OSPEED1_1;
+}

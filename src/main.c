@@ -35,7 +35,6 @@ void Gyro_ReadData();
 int main(void)
 {
 	SysClockConfiguration();
-	SysTickConfiguration();
 
 	GPIOConfiguration();
 
@@ -47,6 +46,9 @@ int main(void)
 	LCD_Config();
 
 	Gyro_Init();
+
+	SysTickConfiguration();
+
 
 	while (1);
 
@@ -60,9 +62,9 @@ void SysTick_Handler()
 	if(0 == tmp%10)
 	{
 		GPIOG->ODR ^= GPIO_ODR_ODR_13;
-
-		Gyro_ReadData();
 	}
+
+	Gyro_ReadData();
 	GPIOG->ODR ^= GPIO_ODR_ODR_14;
 
 }
@@ -170,7 +172,7 @@ void TIMConfiguration()
 void SPIConfiguration()
 {
 	SPI5->CR1 = SPI_CR1_SPE | SPI_CR1_BR_0 | SPI_CR1_BR_1 | SPI_CR1_SSM | SPI_CR1_SSI | SPI_CR1_MSTR;
-	SPI5->CR1 |= 1<<1 | 1<<0;
+//	SPI5->CR1 |= 1<<1 | 1<<0;
 }
 
 // RW: 1=R, 0=W
@@ -463,7 +465,7 @@ uint16_t GYRO_IO_Read(uint8_t* pBuffer, uint8_t ReadAddr)
   uint16_t data=0;
   GYRO_CS_LOW();
 
-  data = SPI_TxRx( (ReadAddr<<8) , 1 );
+  data = SPI_TxRx( (ReadAddr<<8), 1 );
 
   GYRO_CS_HIGH();
 
@@ -472,7 +474,6 @@ uint16_t GYRO_IO_Read(uint8_t* pBuffer, uint8_t ReadAddr)
 
 void Gyro_Init()
 {
-	uint8_t ctrl = 0x00;
 	uint16_t initVals = 0x0000;
 
 	SPI5->CR1 |= SPI_CR1_DFF; //SPI in 16 bit mode
@@ -480,22 +481,21 @@ void Gyro_Init()
 	//(L3GD20_InitStructure.Power_Mode | L3GD20_InitStructure.Output_DataRate |
     //L3GD20_InitStructure.Axes_Enable | L3GD20_InitStructure.Band_Width
 	//initVals = (uint16_t) (0x08 | 0x00 | 0x07 | 0x30);
-	initVals = 1<<3 |
+		//PD,
+
 //	L3GD20_InitStructure.BlockData_Update | L3GD20_InitStructure.Endianness |
 //                        L3GD20_InitStructure.Full_Scale) << 8
-	initVals |= (uint16_t) ((0x00 | 0x00 | 0x10) << 8);
+
 
 	Gyro_GPIO_Config();
 
+	initVals = 1<<0 | 1<<1 | 0<<2 | 1<<3 | 1<<4 | 1<<5 | 1<<6 | 1<<7;
 	/* Write value to MEMS CTRL_REG1 register */
-	ctrl = (uint8_t) initVals;
-	GYRO_IO_Write(ctrl, L3GD20_CTRL_REG1_ADDR);
+	GYRO_IO_Write(initVals, L3GD20_CTRL_REG1_ADDR);
 
-	/* Write value to MEMS CTRL_REG4 register */
-	ctrl = (uint8_t) (initVals >> 8);
-	GYRO_IO_Write(ctrl, L3GD20_CTRL_REG4_ADDR);
+	initVals = 1<<4 | 1<<5 ;
+	GYRO_IO_Write(initVals, L3GD20_CTRL_REG4_ADDR);
 
-	GYRO_IO_Write(ctrl, L3GD20_CTRL_REG1_ADDR);
 }
 
 void Gyro_GPIO_Config()
@@ -509,15 +509,18 @@ void Gyro_ReadData()
 //	//whoamI
 //	GYRO_IO_Write(0, (0x0f | 1<<7));
 	uint16_t x = 0;
-//	uint16_t y = 0;
+	uint16_t y = 0;
+	uint16_t z = 0;
 	uint8_t tmp = 0;
 
 	x = GYRO_IO_Read(&tmp, 0x28);
 	x = GYRO_IO_Read(&tmp, 0x29) << 8;
 
-//	y = GYRO_IO_Read(&tmp, 0x2A);
-//	y = GYRO_IO_Read(&tmp, 0x2B) << 8;
+	y = GYRO_IO_Read(&tmp, 0x2A);
+	y = GYRO_IO_Read(&tmp, 0x2B) << 8;
 
+	z = GYRO_IO_Read(&tmp, 0x2C);
+	z = GYRO_IO_Read(&tmp, 0x2D) << 8;
 
 	asm("nop");
 }

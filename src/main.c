@@ -1,7 +1,16 @@
 #include "stm32f4xx.h"
 #include "ili9341.h"
 
-volatile uint32_t tmp = 0;
+volatile uint32_t cnt = 0;
+
+typedef struct
+{
+	int16_t xAxis;
+	int16_t yAxis;
+	int16_t zAxis;
+}Gyro_t;
+
+Gyro_t gryoReadings;
 
 #define GYRO_CS_LOW()      GPIOC->ODR &= ~(GPIO_ODR_OD1)
 #define GYRO_CS_HIGH()     GPIOC->ODR |=  (GPIO_ODR_OD1)
@@ -25,7 +34,7 @@ void LCD_Config(void);
 void LCD_Delay(uint8_t del);
 void LCD_GPIO_Config(void);
 
-uint32_t SPI_TxRx(uint16_t data, uint8_t RW);
+uint16_t SPI_TxRx(uint16_t data, uint8_t RW);
 
 void Gyro_Init();
 void Gyro_GPIO_Config();
@@ -58,8 +67,8 @@ int main(void)
 void SysTick_Handler()
 {
 
-	tmp += 1;
-	if(0 == tmp%10)
+	cnt += 1;
+	if(0 == cnt%10)
 	{
 		GPIOG->ODR ^= GPIO_ODR_ODR_13;
 	}
@@ -133,7 +142,7 @@ void GPIOConfiguration()
 
 	//SPI
 	// PF7, PF8, PF9
-	GPIOF->MODER   |= GPIO_MODER_MODE7_1  | GPIO_MODER_MODE9_1 ;
+	GPIOF->MODER   |= GPIO_MODER_MODE7_1  | GPIO_MODER_MODE8_1 | GPIO_MODER_MODE9_1 ;
 	//hight speed
 	GPIOF->OSPEEDR |= GPIO_OSPEEDR_OSPEED7_0  | GPIO_OSPEEDR_OSPEED8_0 | GPIO_OSPEEDR_OSPEED9_0;
 
@@ -173,18 +182,18 @@ void SPIConfiguration()
 {
 	SPI5->CR1 = SPI_CR1_SPE | SPI_CR1_BR_0 | SPI_CR1_BR_1 | SPI_CR1_SSM | SPI_CR1_SSI | SPI_CR1_MSTR;
 //	SPI5->CR1 |= 1<<1 | 1<<0;
+//	SPI5->CR1 |= 1<<1;
 }
 
 // RW: 1=R, 0=W
-uint32_t SPI_TxRx(uint16_t data, uint8_t RW)
+uint16_t SPI_TxRx(uint16_t data, uint8_t RW)
 {
 	data |= (uint16_t)RW<<15;
 
 	while( !(SPI5->SR & (SPI_SR_TXE)) );
 	SPI5->DR = data;
-	while( !(SPI5->SR & (SPI_SR_RXNE)) );
-	uint32_t xspk = SPI5->DR;
-	return xspk;
+	while( !(SPI5->SR & SPI_SR_RXNE) );
+	return SPI5->DR  & 0xFFFF;
 }
 
 void ili9341_Init(void)
@@ -460,7 +469,7 @@ void GYRO_IO_Write(uint16_t pBuffer, uint16_t WriteAddr)
   GYRO_CS_HIGH();
 }
 
-uint16_t GYRO_IO_Read(uint8_t* pBuffer, uint8_t ReadAddr)
+uint16_t GYRO_IO_Read(uint8_t ReadAddr)
 {
   uint16_t data=0;
   GYRO_CS_LOW();
@@ -469,7 +478,7 @@ uint16_t GYRO_IO_Read(uint8_t* pBuffer, uint8_t ReadAddr)
 
   GYRO_CS_HIGH();
 
-  return data;
+  return data & 0x00FF;
 }
 
 void Gyro_Init()
@@ -504,23 +513,23 @@ void Gyro_GPIO_Config()
 	GPIOC->MODER   |= GPIO_MODER_MODE1_0;
 	GPIOC->OSPEEDR |= GPIO_OSPEEDR_OSPEED1_1;
 }
+
 void Gyro_ReadData()
 {
-//	//whoamI
-//	GYRO_IO_Write(0, (0x0f | 1<<7));
-	uint16_t x = 0;
-	uint16_t y = 0;
-	uint16_t z = 0;
-	uint8_t tmp = 0;
+	uint16_t tmp;
 
-	x = GYRO_IO_Read(&tmp, 0x28);
-	x = GYRO_IO_Read(&tmp, 0x29) << 8;
+	tmp  = GYRO_IO_Read(0x28);
+	tmp |= GYRO_IO_Read(0x29) << 8;
 
-	y = GYRO_IO_Read(&tmp, 0x2A);
-	y = GYRO_IO_Read(&tmp, 0x2B) << 8;
+	gryoReadings.xAxis = (int16_t) tmp;
 
-	z = GYRO_IO_Read(&tmp, 0x2C);
-	z = GYRO_IO_Read(&tmp, 0x2D) << 8;
+	tmp  = GYRO_IO_Read(0x2A);
+	tmp |= GYRO_IO_Read(0x2B) << 8;
 
-	asm("nop");
+	gryoReadings.yAxis = (int16_t) tmp;
+
+	tmp  = GYRO_IO_Read(0x2C);
+	tmp |= GYRO_IO_Read(0x2D) << 8;
+
+	gryoReadings.zAxis = (int16_t) tmp;
 }

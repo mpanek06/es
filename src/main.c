@@ -1,5 +1,6 @@
 #include "stm32f4xx.h"
 #include "ili9341.h"
+#include "st_logo.h"
 
 volatile uint32_t cnt = 0;
 
@@ -26,6 +27,8 @@ void SysTickConfiguration();
 
 void GPIOConfiguration();
 
+void ExItConfiguration();
+
 void TIMConfiguration();
 
 void SPIConfiguration();
@@ -46,6 +49,8 @@ int main(void)
 	SysClockConfiguration();
 
 	GPIOConfiguration();
+
+	ExItConfiguration();
 
 	TIMConfiguration();
 
@@ -124,6 +129,9 @@ void GPIOConfiguration()
 				  | RCC_AHB1ENR_GPIOEEN | RCC_AHB1ENR_GPIOFEN
 				  | RCC_AHB1ENR_GPIOGEN;
 
+	//PA0 - user btn
+	GPIOA->MODER  |= 1<<0;
+
 	// PG13, PG14 -Blinking LEDs
 	GPIOG->MODER  |= (1<<28);
 	GPIOG->MODER  |= (1<<26);
@@ -160,6 +168,20 @@ void GPIOConfiguration()
 	GPIOC->OSPEEDR |= GPIO_OSPEEDR_OSPEED2_1;
 }
 
+void ExItConfiguration()
+{
+	//EXT IT on PA0 - user btn1
+	SYSCFG->EXTICR[0] |= 1;
+	EXTI->RTSR |= EXTI_RTSR_TR0;
+	NVIC_EnableIRQ(EXTI0_IRQn);
+}
+
+void EXTI0_IRQHandler(void)
+{
+
+}
+
+
 void TIMConfiguration()
 {
 	TIM1->CCMR1  = TIM_CCMR1_OC1PE | TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1;
@@ -181,8 +203,6 @@ void TIMConfiguration()
 void SPIConfiguration()
 {
 	SPI5->CR1 = SPI_CR1_SPE | SPI_CR1_BR_0 | SPI_CR1_BR_1 | SPI_CR1_SSM | SPI_CR1_SSI | SPI_CR1_MSTR;
-//	SPI5->CR1 |= 1<<1 | 1<<0;
-//	SPI5->CR1 |= 1<<1;
 }
 
 // RW: 1=R, 0=W
@@ -381,6 +401,32 @@ void LCD_Config(void)
 
     //LTDC Global Control Register
     LTDC->GCR |= LTDC_GCR_LTDCEN;
+
+    //Layer 1 config:
+
+    // LTDC Layer1 Window Horizontal Position Config Register
+    LTDC_Layer1->WHPCR |= 0u<<16;
+    LTDC_Layer1->WHPCR |= 240u<<16;
+
+    LTDC_Layer1->WVPCR |= 0u<<16;
+    LTDC_Layer1->WVPCR |= 160u<<16;
+
+    //RGB565 pixel format
+    LTDC_Layer1->PFCR |= 2;
+
+    //Alpha to 1.0
+    LTDC_Layer1->CACR |= 0xff;
+
+    //image height
+    LTDC_Layer1->CFBLNR = 160;
+
+    //turn on layer
+    LTDC_Layer1->CR = 1;
+
+    LTDC_Layer1->CFBLR |= ((160*2)<<16U | 160*2 + 3U);
+
+    //addr
+    LTDC_Layer1->CFBAR = ST_LOGO_2;
 }
 
 void LCD_GPIO_Config(void)
@@ -487,15 +533,6 @@ void Gyro_Init()
 
 	SPI5->CR1 |= SPI_CR1_DFF; //SPI in 16 bit mode
 
-	//(L3GD20_InitStructure.Power_Mode | L3GD20_InitStructure.Output_DataRate |
-    //L3GD20_InitStructure.Axes_Enable | L3GD20_InitStructure.Band_Width
-	//initVals = (uint16_t) (0x08 | 0x00 | 0x07 | 0x30);
-		//PD,
-
-//	L3GD20_InitStructure.BlockData_Update | L3GD20_InitStructure.Endianness |
-//                        L3GD20_InitStructure.Full_Scale) << 8
-
-
 	Gyro_GPIO_Config();
 
 	initVals = 1<<0 | 1<<1 | 0<<2 | 1<<3 | 1<<4 | 1<<5 | 1<<6 | 1<<7;
@@ -504,7 +541,6 @@ void Gyro_Init()
 
 	initVals = 1<<4 | 1<<5 ;
 	GYRO_IO_Write(initVals, L3GD20_CTRL_REG4_ADDR);
-
 }
 
 void Gyro_GPIO_Config()

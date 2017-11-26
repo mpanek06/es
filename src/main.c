@@ -1,9 +1,10 @@
 #include "stm32f4xx.h"
 #include "ili9341.h"
-#include "st_logo.h"
+#include "asia.h"
 
 volatile uint32_t cnt = 0;
 
+volatile uint8_t gyro_read_flag = 0;
 typedef struct
 {
 	int16_t xAxis;
@@ -64,7 +65,14 @@ int main(void)
 	SysTickConfiguration();
 
 
-	while (1);
+	while (1)
+	{
+		if( 1 == gyro_read_flag )
+		{
+			Gyro_ReadData();
+			gyro_read_flag = 0;
+		}
+	}
 
 	return 0;
 } /* main */
@@ -78,7 +86,8 @@ void SysTick_Handler()
 		GPIOG->ODR ^= GPIO_ODR_ODR_13;
 	}
 
-	Gyro_ReadData();
+	gyro_read_flag = 1;
+
 	GPIOG->ODR ^= GPIO_ODR_ODR_14;
 
 }
@@ -97,14 +106,19 @@ void SysClockConfiguration()
 
 	while (!(RCC->CR & RCC_CR_HSERDY));
 
-	RCC->CR |= RCC_CR_PLLON | RCC_CR_PLLSAION;
-	RCC->CFGR = RCC_CFGR_PPRE1_DIV4 | RCC_CFGR_PPRE2_DIV2;
+	RCC->CR |= RCC_CR_PLLON;
+	while (!(RCC->CR & RCC_CR_PLLRDY));
+
+	RCC->CR |=  RCC_CR_PLLSAION;
+	while (!(RCC->CR & RCC_CR_PLLSAIRDY));
+
+	RCC->CFGR = RCC_CFGR_HPRE_0 | RCC_CFGR_PPRE1_DIV4 | RCC_CFGR_PPRE2_DIV2;
 
 	FLASH->ACR = FLASH_ACR_DCRST | FLASH_ACR_ICRST;
 	FLASH->ACR = FLASH_ACR_DCEN | FLASH_ACR_ICEN | FLASH_ACR_PRFTEN | FLASH_ACR_LATENCY_5WS;
 	while ((FLASH->ACR & FLASH_ACR_LATENCY) != FLASH_ACR_LATENCY_5WS);
 
-	while (!(RCC->CR & RCC_CR_PLLRDY));
+
 	RCC->CFGR |= RCC_CFGR_SW_PLL;
 	while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL);
 
@@ -114,7 +128,7 @@ void SysClockConfiguration()
 
 void SysTickConfiguration()
 {
-	SysTick->LOAD  = (uint32_t)(4000000 - 1UL);                       /* set reload register */
+	SysTick->LOAD  = (uint32_t)(4000000 - 1UL);                       /* set reload Lister */
 	SysTick->VAL   = 0UL;                                             /* Load the SysTick Counter Value */
 	SysTick->CTRL  = SysTick_CTRL_CLKSOURCE_Msk |
 					 SysTick_CTRL_TICKINT_Msk   |
@@ -382,51 +396,129 @@ void LCD_Config(void)
 {
     ili9341_Init();
 
+    RCC->AHB1ENR |= RCC_AHB1ENR_DMA1EN | RCC_AHB1ENR_DMA2EN | RCC_AHB1ENR_DMA2DEN | RCC_AHB1ENR_CCMDATARAMEN | RCC_AHB1ENR_CRCEN;
+    RCC->AHB2ENR |= RCC_AHB2ENR_DCMIEN;
+    RCC->AHB3ENR |= RCC_AHB3ENR_FMCEN;
+
+    RCC->APB2RSTR |= RCC_APB2RSTR_LTDCRST;
+
+    RCC->APB2RSTR &= ~(RCC_APB2RSTR_LTDCRST);
+
     RCC->APB2ENR |= RCC_APB2ENR_LTDCEN;
 
+
     //LTDC Synchronization Size Configuration Register
-    LTDC->SSCR |= 9ul<<16 | 1ul<<0;
+//    LTDC->SSCR |= 9ul<<16 | 1ul<<0;
+//
+//    //LTDC Back Porch Configuration Register
+//    LTDC->BPCR |= 29ul<<16 | 3ul<<0;
+//
+//    //LTDC Active Width Configuration Register
+//    LTDC->AWCR |= 269ul<<16 | 323ul<<0;
+//
+//    //LTDC Total Width Configuration Register
+//    LTDC->TWCR |= 279ul<<16 | 327ul<<0;
+//
+//    //LTDC Background Color Configuration Register RGB
+//    LTDC->BCCR |= 0xE0ul<<16 | 0x26ul<<8 | 0x4Cul<<0;
+//
+//    //LTDC Global Control Register
+//    LTDC->GCR |= LTDC_GCR_LTDCEN;
+//
+////    LTDC->IER |= 0xe;
+//
+//    LTDC->SRCR |= 1;
+//
+//    //Layer 1 config:
+//
+//    // LTDC Layer1 Window Horizontal Position Config Register
+////    LTDC_Layer1->WHPCR |= 0u<<16;
+////    LTDC_Layer1->WHPCR |= 240u<<16;
+//
+//    LTDC_Layer1->WHPCR = 0x010D001E;
+//
+////    LTDC_Layer1->WVPCR |= 0u<<16;
+////    LTDC_Layer1->WVPCR |= 160u<<16;
+//
+//    LTDC_Layer1->WVPCR |= 0x00A30004;
+//
+//    //RGB565 pixel format
+//    LTDC_Layer1->PFCR |= 2;
+//
+//    //Alpha to 1.0
+//    LTDC_Layer1->CACR = 0xff;
+//
+//
+//
+//
+//    //addr
+////    LTDC_Layer1->CFBAR = (uint32_t) ST_LOGO_2;
+//
+//    LTDC_Layer1->BFCR |= 3 | 2<<8;
+//
+//    LTDC_Layer1->DCCR = 0xff0000ff;
+//
+//    //    LTDC_Layer1->CFBLR |= ((160*2)<<16U | 160*2) + 3U;
+//        LTDC_Layer1->CFBLR = 0x01e001e3;
+//
+//    //image height
+////    LTDC_Layer1->CFBLNR = 160;
+//    LTDC_Layer1->CFBLNR = 0xA0;
+//    //turn on layer
+//    LTDC_Layer1->CR |= 1;
 
-    //LTDC Back Porch Configuration Register
-    LTDC->BPCR |= 29ul<<16 | 3ul<<0;
+#define LCD_WIDTH	 240
+#define LCD_HEIGHT	320
 
-    //LTDC Active Width Configuration Register
-    LTDC->AWCR |= 269ul<<16 | 323ul<<0;
+#define HFP   10
+#define HSYNC 10
+#define HBP   20
 
-    //LTDC Total Width Configuration Register
-    LTDC->TWCR |= 279ul<<16 | 327ul<<0;
+#define VFP   4
+#define VSYNC 2
+#define VBP   2
+#define ACTIVE_W (HSYNC + LCD_WIDTH + HBP - 1)
+#define ACTIVE_H (VSYNC + LCD_HEIGHT + VBP - 1)
 
-    //LTDC Background Color Configuration Register RGB
-    LTDC->BCCR |= 0xfful<<16 | 0x00ul<<8 | 0xfful<<0;
+#define PIXELWIDHT 2
 
-    //LTDC Global Control Register
-    LTDC->GCR |= LTDC_GCR_LTDCEN;
+#define TOTAL_WIDTH  (HSYNC + HBP + LCD_WIDTH + HFP - 1)
+#define TOTAL_HEIGHT (VSYNC + VBP + LCD_HEIGHT + VFP - 1)
 
-    //Layer 1 config:
+//    /* PLL */
+//    RCC->PLLSAICFGR = (200 << 6) | (7 << 24) | (4 << 28);
+//    /* Enable SAI PLL */
+//    RCC->CR |= RCC_CR_PLLSAION;
+//    /* wait for SAI PLL ready */
+//    while((RCC->CR & RCC_CR_PLLSAIRDY) == 0);
+//
+    /* enable clock for LTDC */
+    RCC->APB2ENR |= RCC_APB2ENR_LTDCEN;
+    /* Synchronization Size Configuration */
+    LTDC->SSCR = ((HSYNC - 1) << 16) | (VSYNC - 1);
+    /* Back Porch Configuration */
+    LTDC->BPCR = ((HSYNC + HBP - 1) << 16) | ( VSYNC + VBP - 1);
+    /* Active Width Configuration */
+    LTDC->AWCR = (ACTIVE_W << 16) | (ACTIVE_H);
+    /* Total Width Configuration */
+    LTDC->TWCR = (TOTAL_WIDTH << 16) | (TOTAL_HEIGHT);
+    /* Window Horizontal Position Configuration */
+    LTDC_Layer1->WHPCR = HBP | ((HBP + LCD_WIDTH - 1) << 16);
+    /* Window Vertical Position Configuration */
+    LTDC_Layer1->WVPCR = VBP | ((VBP + LCD_HEIGHT - 1) << 16);
+    /* Pixel Format Configuration */
+    LTDC_Layer1->PFCR = 2;
+    /* Color Frame Buffer Address */
+    LTDC_Layer1->CFBAR = (uint32_t)asia;
+    /* Color Frame Buffer Length */
+    LTDC_Layer1->CFBLR = ((LCD_WIDTH * PIXELWIDHT) << 16) | ((LCD_WIDTH * PIXELWIDHT) + 3);
+    /* Enable Layer */
+    LTDC_Layer1->CR = LTDC_LxCR_LEN;
+    /* Immediate Reload */
+    LTDC->SRCR = LTDC_SRCR_IMR;
+    /* Enable LTDC */
+    LTDC->GCR = LTDC_GCR_LTDCEN;
 
-    // LTDC Layer1 Window Horizontal Position Config Register
-    LTDC_Layer1->WHPCR |= 0u<<16;
-    LTDC_Layer1->WHPCR |= 240u<<16;
-
-    LTDC_Layer1->WVPCR |= 0u<<16;
-    LTDC_Layer1->WVPCR |= 160u<<16;
-
-    //RGB565 pixel format
-    LTDC_Layer1->PFCR |= 2;
-
-    //Alpha to 1.0
-    LTDC_Layer1->CACR |= 0xff;
-
-    //image height
-    LTDC_Layer1->CFBLNR = 160;
-
-    //turn on layer
-    LTDC_Layer1->CR = 1;
-
-    LTDC_Layer1->CFBLR |= ((160*2)<<16U | 160*2 + 3U);
-
-    //addr
-    LTDC_Layer1->CFBAR = ST_LOGO_2;
 }
 
 void LCD_GPIO_Config(void)

@@ -1,28 +1,14 @@
 #include "stm32f4xx.h"
 #include "lcd.h"
 #include "spi.h"
+#include "gyro.h"
 #include "asia.h"
 
 volatile uint32_t cnt = 0;
 
 volatile uint8_t gyro_read_flag = 0;
-typedef struct
-{
-	int16_t xAxis;
-	int16_t yAxis;
-	int16_t zAxis;
-}Gyro_t;
 
 Gyro_t gryoReadings;
-
-#define GYRO_CS_LOW()      GPIOC->ODR &= ~(GPIO_ODR_OD1)
-#define GYRO_CS_HIGH()     GPIOC->ODR |=  (GPIO_ODR_OD1)
-
-#define L3GD20_CTRL_REG1_ADDR         0x20  /* Control register 1 */
-#define L3GD20_CTRL_REG2_ADDR         0x21  /* Control register 2 */
-#define L3GD20_CTRL_REG3_ADDR         0x22  /* Control register 3 */
-#define L3GD20_CTRL_REG4_ADDR         0x23  /* Control register 4 */
-#define L3GD20_CTRL_REG5_ADDR         0x24  /* Control register 5 */
 
 void SysClockConfiguration();
 void SysTickConfiguration();
@@ -32,11 +18,6 @@ void GPIOConfiguration();
 void ExItConfiguration();
 
 void TIMConfiguration();
-
-void Gyro_Init();
-void Gyro_GPIO_Config();
-void GYRO_IO_Write(uint16_t pBuffer, uint16_t WriteAddr);
-void Gyro_ReadData();
 
 int main(void)
 {
@@ -187,7 +168,6 @@ void EXTI0_IRQHandler(void)
 
 }
 
-
 void TIMConfiguration()
 {
 	TIM1->CCMR1  = TIM_CCMR1_OC1PE | TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1;
@@ -204,68 +184,4 @@ void TIMConfiguration()
 	TIM1->CCR4 = 200;
 	TIM1->EGR  = TIM_EGR_UG;
 	TIM1->CR1  = TIM_CR1_ARPE | TIM_CR1_CEN;
-}
-
-void GYRO_IO_Write(uint16_t pBuffer, uint16_t WriteAddr)
-{
-  GYRO_CS_LOW();
-
-  SPI_TxRx((WriteAddr<<8) | pBuffer, 0);
-
-  GYRO_CS_HIGH();
-}
-
-uint16_t GYRO_IO_Read(uint8_t ReadAddr)
-{
-  uint16_t data=0;
-  GYRO_CS_LOW();
-
-  data = SPI_TxRx( (ReadAddr<<8), 1 );
-
-  GYRO_CS_HIGH();
-
-  return data & 0x00FF;
-}
-
-void Gyro_Init()
-{
-	uint16_t initVals = 0x0000;
-
-	SPI5->CR1 |= SPI_CR1_DFF; //SPI in 16 bit mode
-
-	Gyro_GPIO_Config();
-
-	initVals = 1<<0 | 1<<1 | 0<<2 | 1<<3 | 1<<4 | 1<<5 | 1<<6 | 1<<7;
-	/* Write value to MEMS CTRL_REG1 register */
-	GYRO_IO_Write(initVals, L3GD20_CTRL_REG1_ADDR);
-
-	initVals = 1<<4 | 1<<5 ;
-	GYRO_IO_Write(initVals, L3GD20_CTRL_REG4_ADDR);
-}
-
-void Gyro_GPIO_Config()
-{
-	//CS - PC1
-	GPIOC->MODER   |= GPIO_MODER_MODE1_0;
-	GPIOC->OSPEEDR |= GPIO_OSPEEDR_OSPEED1_1;
-}
-
-void Gyro_ReadData()
-{
-	uint16_t tmp;
-
-	tmp  = GYRO_IO_Read(0x28);
-	tmp |= GYRO_IO_Read(0x29) << 8;
-
-	gryoReadings.xAxis = (int16_t) tmp;
-
-	tmp  = GYRO_IO_Read(0x2A);
-	tmp |= GYRO_IO_Read(0x2B) << 8;
-
-	gryoReadings.yAxis = (int16_t) tmp;
-
-	tmp  = GYRO_IO_Read(0x2C);
-	tmp |= GYRO_IO_Read(0x2D) << 8;
-
-	gryoReadings.zAxis = (int16_t) tmp;
 }

@@ -1,10 +1,5 @@
-/* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __ILI9341_H
-#define __ILI9341_H
-
-#ifdef __cplusplus
- extern "C" {
-#endif
+#ifndef LCD_H
+#define LCD_H
 
 
 #define ILI9341_ID                  0x9341
@@ -158,9 +153,10 @@ uint32_t LCD_IO_ReadData(uint16_t RegValue, uint8_t ReadSize);
 #define LCD_RDX_HIGH()     GPIOD->ODR |=  (GPIO_ODR_OD12)
 
 
-#ifdef __cplusplus
-}
-#endif
+void LCD_Config(void);
+void LCD_Delay(uint8_t del);
+void LCD_GPIO_Config(void);
 
-#endif /* __ILI9341_H */
+
+#endif /* LCD */
 

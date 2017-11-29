@@ -43,7 +43,9 @@ int main(void)
 		{
 			Gyro_ReadData();
 			gyro_read_flag = 0;
-			LCD_drawSquare(120, 160 + (gyroReadings.xAxis/350), 30);
+			LCD_drawSquare(53, 160 + gyroReadings.xAxis/350, 30);
+			LCD_drawSquare(125, 160 + gyroReadings.yAxis/350, 30);
+			LCD_drawSquare(195, 160 + gyroReadings.zAxis/350, 30);
 
 		}
 	}
@@ -59,7 +61,7 @@ void SysTick_Handler()
 		GPIOG->ODR ^= GPIO_ODR_ODR_13;
 	}
 
-	if(0 == cnt%4)
+	if(0 == cnt%8)
 	{
 		LCD_clearScreen();
 	}

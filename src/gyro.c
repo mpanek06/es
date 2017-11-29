@@ -2,8 +2,7 @@
 #include "gyro.h"
 #include "spi.h"
 
-extern Gyro_t gryoReadings;
-
+Gyro_t gyroReadings;
 
 void GYRO_IO_Write(uint16_t pBuffer, uint16_t WriteAddr)
 {
@@ -56,15 +55,15 @@ void Gyro_ReadData()
 	tmp  = GYRO_IO_Read(0x28);
 	tmp |= GYRO_IO_Read(0x29) << 8;
 
-	gryoReadings.xAxis = (int16_t) tmp;
+	gyroReadings.xAxis = (int16_t) tmp;
 
 	tmp  = GYRO_IO_Read(0x2A);
 	tmp |= GYRO_IO_Read(0x2B) << 8;
 
-	gryoReadings.yAxis = (int16_t) tmp;
+	gyroReadings.yAxis = (int16_t) tmp;
 
 	tmp  = GYRO_IO_Read(0x2C);
 	tmp |= GYRO_IO_Read(0x2D) << 8;
 
-	gryoReadings.zAxis = (int16_t) tmp;
+	gyroReadings.zAxis = (int16_t) tmp;
 }

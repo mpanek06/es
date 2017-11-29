@@ -7,17 +7,16 @@
 volatile uint32_t cnt = 0;
 
 volatile uint8_t gyro_read_flag = 0;
-
-Gyro_t gryoReadings;
-
 void SysClockConfiguration();
 void SysTickConfiguration();
 
-void GPIOConfiguration();
 
+void GPIOConfiguration();
 void ExItConfiguration();
 
 void TIMConfiguration();
+
+extern Gyro_t gyroReadings;
 
 int main(void)
 {
@@ -44,6 +43,8 @@ int main(void)
 		{
 			Gyro_ReadData();
 			gyro_read_flag = 0;
+			LCD_drawSquare(120, 160 + (gyroReadings.xAxis/350), 30);
+
 		}
 	}
 
@@ -52,11 +53,15 @@ int main(void)
 
 void SysTick_Handler()
 {
-
 	cnt += 1;
 	if(0 == cnt%10)
 	{
 		GPIOG->ODR ^= GPIO_ODR_ODR_13;
+	}
+
+	if(0 == cnt%4)
+	{
+		LCD_clearScreen();
 	}
 
 	gyro_read_flag = 1;

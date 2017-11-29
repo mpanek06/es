@@ -157,6 +157,10 @@ void LCD_Config(void);
 void LCD_Delay(uint8_t del);
 void LCD_GPIO_Config(void);
 
+void LCD_drawPixel(uint8_t x, uint8_t y);
+void LCD_drawRectangle(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1);
+void LCD_drawSquare(uint8_t x_center, uint8_t y_center, uint8_t size);
+void LCD_clearScreen();
 
 #endif /* LCD */
 

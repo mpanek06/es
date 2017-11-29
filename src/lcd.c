@@ -1,8 +1,31 @@
 #include "stm32f4xx.h"
 #include "lcd.h"
 #include "spi.h"
+#include "string.h"
 #include "asia.h"
 
+#define LCD_WIDTH	 240
+#define LCD_HEIGHT	320
+
+#define HFP   10
+#define HSYNC 10
+#define HBP   20
+
+#define VFP   4
+#define VSYNC 2
+#define VBP   2
+#define ACTIVE_W (HSYNC + LCD_WIDTH + HBP - 1)
+#define ACTIVE_H (VSYNC + LCD_HEIGHT + VBP - 1)
+
+#define PIXELWIDHT 2
+
+#define TOTAL_WIDTH  (HSYNC + HBP + LCD_WIDTH + HFP - 1)
+#define TOTAL_HEIGHT (VSYNC + VBP + LCD_HEIGHT + VFP - 1)
+
+#define DEBUG_V_OFFSET 2
+#define DEBUG_H_OFFSET 10
+
+uint16_t frameBuffer[76800];
 
 void ili9341_Init(void)
 {
@@ -167,6 +190,45 @@ void LCD_Delay(uint8_t del)
 	for(volatile uint32_t z =0; z<2600000; ++z ){};
 }
 
+void LCD_drawPixel(uint8_t x, uint8_t y)
+{
+	if(x < LCD_WIDTH && y < LCD_HEIGHT)
+	{
+		frameBuffer[LCD_WIDTH + ((y*LCD_WIDTH + x))] = 0xffff;
+	}
+}
+
+void LCD_drawRectangle(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1)
+{
+	uint8_t i = 0;
+	uint8_t j = 0;
+
+	for( i = x0; i < x1; ++i)
+	{
+		for( j = y0; j < y1; ++j)
+		{
+			LCD_drawPixel(i,j);
+		}
+	}
+}
+
+void LCD_drawSquare(uint8_t x_center, uint8_t y_center, uint8_t size)
+{
+	LCD_drawRectangle( x_center - size, y_center - size, x_center + size, y_center + size );
+}
+
+void LCD_clearScreen()
+{
+//	uint8_t i = 0;
+//
+//	for(i = 0; i < LCD_WIDTH*LCD_HEIGHT; ++i )
+//	{
+//		frameBuffer[i] = 0;
+//	}
+
+	memset(frameBuffer, 0, LCD_WIDTH*LCD_HEIGHT);
+}
+
 void LCD_Config(void)
 {
     ili9341_Init();
@@ -181,92 +243,6 @@ void LCD_Config(void)
 
     RCC->APB2ENR |= RCC_APB2ENR_LTDCEN;
 
-
-    //LTDC Synchronization Size Configuration Register
-//    LTDC->SSCR |= 9ul<<16 | 1ul<<0;
-//
-//    //LTDC Back Porch Configuration Register
-//    LTDC->BPCR |= 29ul<<16 | 3ul<<0;
-//
-//    //LTDC Active Width Configuration Register
-//    LTDC->AWCR |= 269ul<<16 | 323ul<<0;
-//
-//    //LTDC Total Width Configuration Register
-//    LTDC->TWCR |= 279ul<<16 | 327ul<<0;
-//
-//    //LTDC Background Color Configuration Register RGB
-//    LTDC->BCCR |= 0xE0ul<<16 | 0x26ul<<8 | 0x4Cul<<0;
-//
-//    //LTDC Global Control Register
-//    LTDC->GCR |= LTDC_GCR_LTDCEN;
-//
-////    LTDC->IER |= 0xe;
-//
-//    LTDC->SRCR |= 1;
-//
-//    //Layer 1 config:
-//
-//    // LTDC Layer1 Window Horizontal Position Config Register
-////    LTDC_Layer1->WHPCR |= 0u<<16;
-////    LTDC_Layer1->WHPCR |= 240u<<16;
-//
-//    LTDC_Layer1->WHPCR = 0x010D001E;
-//
-////    LTDC_Layer1->WVPCR |= 0u<<16;
-////    LTDC_Layer1->WVPCR |= 160u<<16;
-//
-//    LTDC_Layer1->WVPCR |= 0x00A30004;
-//
-//    //RGB565 pixel format
-//    LTDC_Layer1->PFCR |= 2;
-//
-//    //Alpha to 1.0
-//    LTDC_Layer1->CACR = 0xff;
-//
-//
-//
-//
-//    //addr
-////    LTDC_Layer1->CFBAR = (uint32_t) ST_LOGO_2;
-//
-//    LTDC_Layer1->BFCR |= 3 | 2<<8;
-//
-//    LTDC_Layer1->DCCR = 0xff0000ff;
-//
-//    //    LTDC_Layer1->CFBLR |= ((160*2)<<16U | 160*2) + 3U;
-//        LTDC_Layer1->CFBLR = 0x01e001e3;
-//
-//    //image height
-////    LTDC_Layer1->CFBLNR = 160;
-//    LTDC_Layer1->CFBLNR = 0xA0;
-//    //turn on layer
-//    LTDC_Layer1->CR |= 1;
-
-#define LCD_WIDTH	 240
-#define LCD_HEIGHT	320
-
-#define HFP   10
-#define HSYNC 10
-#define HBP   20
-
-#define VFP   4
-#define VSYNC 2
-#define VBP   2
-#define ACTIVE_W (HSYNC + LCD_WIDTH + HBP - 1)
-#define ACTIVE_H (VSYNC + LCD_HEIGHT + VBP - 1)
-
-#define PIXELWIDHT 2
-
-#define TOTAL_WIDTH  (HSYNC + HBP + LCD_WIDTH + HFP - 1)
-#define TOTAL_HEIGHT (VSYNC + VBP + LCD_HEIGHT + VFP - 1)
-
-//    /* PLL */
-//    RCC->PLLSAICFGR = (200 << 6) | (7 << 24) | (4 << 28);
-//    /* Enable SAI PLL */
-//    RCC->CR |= RCC_CR_PLLSAION;
-//    /* wait for SAI PLL ready */
-//    while((RCC->CR & RCC_CR_PLLSAIRDY) == 0);
-//
     /* enable clock for LTDC */
     RCC->APB2ENR |= RCC_APB2ENR_LTDCEN;
     /* Synchronization Size Configuration */
@@ -278,19 +254,23 @@ void LCD_Config(void)
     /* Total Width Configuration */
     LTDC->TWCR = (TOTAL_WIDTH << 16) | (TOTAL_HEIGHT);
     /* Window Horizontal Position Configuration */
-    LTDC_Layer1->WHPCR = HBP | ((HBP + LCD_WIDTH - 1) << 16);
+    LTDC_Layer1->WHPCR = (HBP+DEBUG_H_OFFSET) | ((HBP + LCD_WIDTH - 1 + DEBUG_H_OFFSET) << 16);
     /* Window Vertical Position Configuration */
-    LTDC_Layer1->WVPCR = VBP | ((VBP + LCD_HEIGHT - 1) << 16);
+    LTDC_Layer1->WVPCR = (VBP+DEBUG_V_OFFSET) | ((VBP + LCD_HEIGHT - 1 + DEBUG_V_OFFSET) << 16);
     /* Pixel Format Configuration */
     LTDC_Layer1->PFCR = 2;
     /* Color Frame Buffer Address */
-    LTDC_Layer1->CFBAR = (uint32_t)asia;
+    LTDC_Layer1->CFBAR = (uint32_t)frameBuffer;
     /* Color Frame Buffer Length */
     LTDC_Layer1->CFBLR = ((LCD_WIDTH * PIXELWIDHT) << 16) | ((LCD_WIDTH * PIXELWIDHT) + 3);
     /* Enable Layer */
     LTDC_Layer1->CR = LTDC_LxCR_LEN;
+    /* Set Layer alpha */
+    LTDC_Layer1->CACR = (uint8_t)255;
     /* Immediate Reload */
     LTDC->SRCR = LTDC_SRCR_IMR;
+    /* Set background color */
+    LTDC->BCCR = 0xffffff;
     /* Enable LTDC */
     LTDC->GCR = LTDC_GCR_LTDCEN;
 

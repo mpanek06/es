@@ -37,16 +37,32 @@ int main(void)
 
 	SysTickConfiguration();
 
+	uint8_t active_layer = 0;
 	while (1)
 	{
 		if( 1 == gyro_read_flag )
 		{
 			Gyro_ReadData();
 			gyro_read_flag = 0;
-			LCD_drawSquare(53, 160 + gyroReadings.xAxis/350, 30);
-			LCD_drawSquare(125, 160 + gyroReadings.yAxis/350, 30);
-			LCD_drawSquare(195, 160 + gyroReadings.zAxis/350, 30);
 
+			if( 1 == active_layer )
+			{
+//				LCD_clearLayer(0);
+				LCD_drawSquare(53,  80 + gyroReadings.xAxis/350, 30, 0);
+				LCD_drawSquare(125, 80 + gyroReadings.yAxis/350, 30, 0);
+				LCD_drawSquare(195, 80 + gyroReadings.zAxis/350, 30, 0);
+				LCD_setActiveLayer(0);
+				active_layer = 0;
+			}
+			else
+			{
+//				LCD_clearLayer(1);
+				LCD_drawSquare(53,  160 + gyroReadings.xAxis/350, 30, 1);
+				LCD_drawSquare(125, 160 + gyroReadings.yAxis/350, 30, 1);
+				LCD_drawSquare(195, 160 + gyroReadings.zAxis/350, 30, 1);
+				LCD_setActiveLayer(1);
+				active_layer = 1;
+			}
 		}
 	}
 
@@ -61,15 +77,9 @@ void SysTick_Handler()
 		GPIOG->ODR ^= GPIO_ODR_ODR_13;
 	}
 
-	if(0 == cnt%8)
-	{
-		LCD_clearScreen();
-	}
-
 	gyro_read_flag = 1;
 
 	GPIOG->ODR ^= GPIO_ODR_ODR_14;
-
 }
 
 void SysClockConfiguration()

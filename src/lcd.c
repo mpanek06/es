@@ -25,7 +25,7 @@
 #define DEBUG_V_OFFSET 2
 #define DEBUG_H_OFFSET 10
 
-uint16_t frameBuffer[76800];
+uint8_t frameBuffer[2][76800];
 
 void ili9341_Init(void)
 {
@@ -187,18 +187,18 @@ void LCD_IO_Init(void)
 
 void LCD_Delay(uint8_t del)
 {
-	for(volatile uint32_t z =0; z<2600000; ++z ){};
+	for(volatile uint32_t z=0; z<2600000; ++z ){};
 }
 
-void LCD_drawPixel(uint8_t x, uint8_t y)
+void LCD_drawPixel(uint8_t x, uint8_t y, uint8_t layer_id)
 {
 	if(x < LCD_WIDTH && y < LCD_HEIGHT)
 	{
-		frameBuffer[LCD_WIDTH + ((y*LCD_WIDTH + x))] = 0xffff;
+		frameBuffer[layer_id][LCD_WIDTH + ((y*LCD_WIDTH + x))] = 0xff;
 	}
 }
 
-void LCD_drawRectangle(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1)
+void LCD_drawRectangle(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_t layer_id)
 {
 	uint8_t i = 0;
 	uint8_t j = 0;
@@ -207,26 +207,35 @@ void LCD_drawRectangle(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1)
 	{
 		for( j = y0; j < y1; ++j)
 		{
-			LCD_drawPixel(i,j);
+			LCD_drawPixel(i,j, layer_id);
 		}
 	}
 }
 
-void LCD_drawSquare(uint8_t x_center, uint8_t y_center, uint8_t size)
+void LCD_drawSquare(uint8_t x_center, uint8_t y_center, uint8_t size, uint8_t layer_id)
 {
-	LCD_drawRectangle( x_center - size, y_center - size, x_center + size, y_center + size );
+	uint8_t size_2 = size/2;
+	LCD_drawRectangle( x_center - size_2, y_center - size_2, x_center + size_2, y_center + size_2, layer_id );
 }
 
-void LCD_clearScreen()
+void LCD_clearLayer( uint8_t layer_id )
 {
-//	uint8_t i = 0;
-//
-//	for(i = 0; i < LCD_WIDTH*LCD_HEIGHT; ++i )
-//	{
-//		frameBuffer[i] = 0;
-//	}
+	memset(frameBuffer[layer_id], 0, LCD_WIDTH*LCD_HEIGHT);
+}
 
-	memset(frameBuffer, 0, LCD_WIDTH*LCD_HEIGHT);
+void LCD_setActiveLayer(uint8_t layer_id)
+{
+//    LTDC_Layer1->CFBAR = (uint32_t)frameBuffer[layer_id][200];
+	if(0 == layer_id)
+	{
+		LTDC_Layer1->CR  =  LTDC_LxCR_LEN;
+		LTDC_Layer2->CR &= ~LTDC_LxCR_LEN;
+	}
+	else
+	{
+		LTDC_Layer1->CR &= ~LTDC_LxCR_LEN;
+		LTDC_Layer2->CR  =  LTDC_LxCR_LEN;
+	}
 }
 
 void LCD_Config(void)
@@ -258,15 +267,33 @@ void LCD_Config(void)
     /* Window Vertical Position Configuration */
     LTDC_Layer1->WVPCR = (VBP+DEBUG_V_OFFSET) | ((VBP + LCD_HEIGHT - 1 + DEBUG_V_OFFSET) << 16);
     /* Pixel Format Configuration */
-    LTDC_Layer1->PFCR = 2;
+//    LTDC_Layer1->PFCR = 2;
+    LTDC_Layer1->PFCR = 5;
     /* Color Frame Buffer Address */
-    LTDC_Layer1->CFBAR = (uint32_t)frameBuffer;
+    LTDC_Layer1->CFBAR = (uint32_t)frameBuffer[0];
     /* Color Frame Buffer Length */
     LTDC_Layer1->CFBLR = ((LCD_WIDTH * PIXELWIDHT) << 16) | ((LCD_WIDTH * PIXELWIDHT) + 3);
     /* Enable Layer */
     LTDC_Layer1->CR = LTDC_LxCR_LEN;
     /* Set Layer alpha */
     LTDC_Layer1->CACR = (uint8_t)255;
+
+    /* Window Horizontal Position Configuration */
+    LTDC_Layer2->WHPCR = (HBP+DEBUG_H_OFFSET) | ((HBP + LCD_WIDTH - 1 + DEBUG_H_OFFSET) << 16);
+    /* Window Vertical Position Configuration */
+    LTDC_Layer2->WVPCR = (VBP+DEBUG_V_OFFSET) | ((VBP + LCD_HEIGHT - 1 + DEBUG_V_OFFSET) << 16);
+    /* Pixel Format Configuration */
+//    LTDC_Layer1->PFCR = 2;
+    LTDC_Layer2->PFCR = 5;
+    /* Color Frame Buffer Address */
+    LTDC_Layer2->CFBAR = (uint32_t)frameBuffer[1];
+    /* Color Frame Buffer Length */
+    LTDC_Layer2->CFBLR = ((LCD_WIDTH * PIXELWIDHT) << 16) | ((LCD_WIDTH * PIXELWIDHT) + 3);
+    /* Enable Layer */
+    LTDC_Layer2->CR = LTDC_LxCR_LEN;
+    /* Set Layer alpha */
+    LTDC_Layer2->CACR = (uint8_t)255;
+
     /* Immediate Reload */
     LTDC->SRCR = LTDC_SRCR_IMR;
     /* Set background color */

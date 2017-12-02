@@ -225,17 +225,18 @@ void LCD_clearLayer( uint8_t layer_id )
 
 void LCD_setActiveLayer(uint8_t layer_id)
 {
-//    LTDC_Layer1->CFBAR = (uint32_t)frameBuffer[layer_id][200];
 	if(0 == layer_id)
 	{
-		LTDC_Layer1->CR  =  LTDC_LxCR_LEN;
-		LTDC_Layer2->CR &= ~LTDC_LxCR_LEN;
+		LTDC_Layer1->CACR = 255;
+		LTDC_Layer2->CACR = 0;
 	}
 	else
 	{
-		LTDC_Layer1->CR &= ~LTDC_LxCR_LEN;
-		LTDC_Layer2->CR  =  LTDC_LxCR_LEN;
+		LTDC_Layer1->CACR = 0;
+		LTDC_Layer2->CACR = 255;
 	}
+
+	LTDC->SRCR=2;
 }
 
 void LCD_Config(void)
@@ -266,8 +267,7 @@ void LCD_Config(void)
     LTDC_Layer1->WHPCR = (HBP+DEBUG_H_OFFSET) | ((HBP + LCD_WIDTH - 1 + DEBUG_H_OFFSET) << 16);
     /* Window Vertical Position Configuration */
     LTDC_Layer1->WVPCR = (VBP+DEBUG_V_OFFSET) | ((VBP + LCD_HEIGHT - 1 + DEBUG_V_OFFSET) << 16);
-    /* Pixel Format Configuration */
-//    LTDC_Layer1->PFCR = 2;
+    /* Pixel Format Configuration - L8 */
     LTDC_Layer1->PFCR = 5;
     /* Color Frame Buffer Address */
     LTDC_Layer1->CFBAR = (uint32_t)frameBuffer[0];
@@ -283,16 +283,15 @@ void LCD_Config(void)
     /* Window Vertical Position Configuration */
     LTDC_Layer2->WVPCR = (VBP+DEBUG_V_OFFSET) | ((VBP + LCD_HEIGHT - 1 + DEBUG_V_OFFSET) << 16);
     /* Pixel Format Configuration */
-//    LTDC_Layer1->PFCR = 2;
     LTDC_Layer2->PFCR = 5;
-    /* Color Frame Buffer Address */
+    /* Color Frame Buffer Address - L8  */
     LTDC_Layer2->CFBAR = (uint32_t)frameBuffer[1];
     /* Color Frame Buffer Length */
     LTDC_Layer2->CFBLR = ((LCD_WIDTH * PIXELWIDHT) << 16) | ((LCD_WIDTH * PIXELWIDHT) + 3);
     /* Enable Layer */
     LTDC_Layer2->CR = LTDC_LxCR_LEN;
     /* Set Layer alpha */
-    LTDC_Layer2->CACR = (uint8_t)255;
+    LTDC_Layer2->CACR = (uint8_t)50;
 
     /* Immediate Reload */
     LTDC->SRCR = LTDC_SRCR_IMR;

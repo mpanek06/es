@@ -2,7 +2,7 @@
 #include "lcd.h"
 #include "spi.h"
 #include "string.h"
-#include "asia.h"
+#include "math.h"
 
 #define LCD_WIDTH	 240
 #define LCD_HEIGHT	320
@@ -24,6 +24,8 @@
 
 #define DEBUG_V_OFFSET 2
 #define DEBUG_H_OFFSET 10
+
+#define PI 3.14159265
 
 uint8_t frameBuffer[2][76800];
 
@@ -216,6 +218,70 @@ void LCD_drawSquare(uint8_t x_center, uint8_t y_center, uint8_t size, uint8_t la
 {
 	uint8_t size_2 = size/2;
 	LCD_drawRectangle( x_center - size_2, y_center - size_2, x_center + size_2, y_center + size_2, layer_id );
+}
+
+void LCD_drawLine_alpha(uint8_t x_0, uint8_t y_0, uint8_t length,  uint8_t alpha, uint8_t layer_id)
+{
+	uint8_t x_1 = 0;
+	uint8_t y_1 = 0;
+
+	double cos_val = cos((double)(alpha*PI/180));
+	double sin_val = sin((double)(alpha*PI/180));
+
+	x_1 = x_0 + length * cos_val;
+	y_1 = y_0 + length * sin_val;
+
+	LCD_drawLine(x_0, y_0, x_1, y_1, layer_id );
+}
+
+void LCD_drawLine(uint8_t x_0, uint8_t y_0, uint8_t x_1, uint8_t y_1, uint8_t layer_id)
+{
+
+	double a  = 0;
+	double b  = 0;
+	double c  = 0;
+	double d  = 0;
+	double y  = 0;
+
+	c = x_1 - x_0;
+	d = y_1 - y_0;
+
+
+	if( 0 == c ) /* Vertical line */
+	{
+		for(int16_t y = y_0; y < y_1; ++y)
+		{
+			LCD_drawPixel(x_0, y, layer_id);
+		}
+	}
+	else if( 0 == d ) /* Horizontal line */
+	{
+		for(int16_t x = x_0; x < x_1; ++x)
+		{
+			LCD_drawPixel(x, y_0, layer_id);
+		}
+	}
+	else
+	{
+		a = c/d;
+		b = y_1-a*x_1;
+
+		if(a>0)
+		{
+			for(int16_t x = x_0; x < x_1; ++x)
+			{
+				y = a*x + b;
+				LCD_drawPixel(x, y, layer_id);
+			}
+		} else {
+			for(int16_t x = x_0; x > x_1; --x)
+			{
+				y = a*x + b;
+				LCD_drawPixel(x, y, layer_id);
+			}
+		}
+	}
+
 }
 
 void LCD_clearLayer( uint8_t layer_id )

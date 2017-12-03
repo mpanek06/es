@@ -48,18 +48,28 @@ int main(void)
 			if( 1 == active_layer )
 			{
 				LCD_clearLayer(0);
+
 				LCD_drawSquare(53,  160 + gyroReadings.xAxis/350, 30, 0);
 				LCD_drawSquare(125, 160 + gyroReadings.yAxis/350, 30, 0);
 				LCD_drawSquare(195, 160 + gyroReadings.zAxis/350, 30, 0);
+
+				LCD_drawLine( 60, 60, 120, 120, 0);
+				LCD_drawLine( 120, 60, 60, 120, 0);
+
 				LCD_setActiveLayer(0);
 				active_layer = 0;
 			}
 			else
 			{
 				LCD_clearLayer(1);
+
 				LCD_drawSquare(53,  160 + gyroReadings.xAxis/350, 30, 1);
 				LCD_drawSquare(125, 160 + gyroReadings.yAxis/350, 30, 1);
 				LCD_drawSquare(195, 160 + gyroReadings.zAxis/350, 30, 1);
+
+				LCD_drawLine( 60, 60, 120, 120, 1);
+				LCD_drawLine( 120, 60, 60, 120, 1);
+
 				LCD_setActiveLayer(1);
 				active_layer = 1;
 			}
@@ -114,6 +124,11 @@ void SysClockConfiguration()
 
 	RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
 	__DSB();
+
+
+	SCB->CPACR |= (3UL << 20) | (3UL << 22);
+    __DSB();
+    __ISB();
 }
 
 void SysTickConfiguration()

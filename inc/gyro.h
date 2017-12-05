@@ -14,14 +14,19 @@
 
 typedef struct
 {
-	int16_t xAxis;
-	int16_t yAxis;
-	int16_t zAxis;
+	int16_t xAxisVel;
+	int16_t yAxisVel;
+	int16_t zAxisVel;
+
+	double xAxisPos;
+	double yAxisPos;
+	double zAxisPos;
 }Gyro_t;
 
 void Gyro_Init();
 void Gyro_GPIO_Config();
 void GYRO_IO_Write(uint16_t pBuffer, uint16_t WriteAddr);
 void Gyro_ReadData();
+void Gyro_CalculatePosition();
 
 #endif

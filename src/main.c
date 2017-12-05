@@ -10,20 +10,12 @@ volatile uint8_t gyro_read_flag = 0;
 void SysClockConfiguration();
 void SysTickConfiguration();
 
-
 void GPIOConfiguration();
 void ExItConfiguration();
 
 void TIMConfiguration();
 
 extern Gyro_t gyroReadings;
-
-
-uint8_t x_0= 40;
-uint8_t y_0= 200;
-
-uint8_t x_1= 120;
-uint8_t y_1= 120;
 
 int main(void)
 {
@@ -45,13 +37,14 @@ int main(void)
 	SysTickConfiguration();
 
 	uint8_t active_layer = 0;
-	uint16_t angle = 0;
 	while (1)
 	{
 		if( 1 == gyro_read_flag )
 		{
-			Gyro_ReadData();
 			gyro_read_flag = 0;
+
+			Gyro_ReadData();
+			Gyro_CalculatePosition();
 
 			active_layer ^= 0x1;
 			LCD_clearLayer(active_layer);
@@ -59,14 +52,8 @@ int main(void)
 //			LCD_drawSquare(53,  160 + gyroReadings.xAxis/350, 30, active_layer);
 //			LCD_drawSquare(125, 160 + gyroReadings.yAxis/350, 30, active_layer);
 //			LCD_drawSquare(195, 160 + gyroReadings.zAxis/350, 30, active_layer);
-//
-//			LCD_drawLine( 60, 60, 120, 120, active_layer);
-//			LCD_drawLine( 120, 60, 60, 120, active_layer);
 
-
-			LCD_drawLine_alpha(120, 160, 50, angle++, active_layer);
-			angle %= 360;
-//			LCD_drawLine( x_0, y_0, x_1, y_1, active_layer );
+			LCD_drawLine_alpha_center(120, 160, 50, 90 + -1*(gyroReadings.zAxisPos)/33, active_layer);
 
 			LCD_setActiveLayer(active_layer);
 

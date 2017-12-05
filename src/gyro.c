@@ -55,15 +55,23 @@ void Gyro_ReadData()
 	tmp  = GYRO_IO_Read(0x28);
 	tmp |= GYRO_IO_Read(0x29) << 8;
 
-	gyroReadings.xAxis = (int16_t) tmp;
+	gyroReadings.xAxisVel = (int16_t) tmp;
 
 	tmp  = GYRO_IO_Read(0x2A);
 	tmp |= GYRO_IO_Read(0x2B) << 8;
 
-	gyroReadings.yAxis = (int16_t) tmp;
+	gyroReadings.yAxisVel = (int16_t) tmp;
 
 	tmp  = GYRO_IO_Read(0x2C);
 	tmp |= GYRO_IO_Read(0x2D) << 8;
 
-	gyroReadings.zAxis = (int16_t) tmp;
+	gyroReadings.zAxisVel = (int16_t) tmp;
+}
+
+void Gyro_CalculatePosition()
+{
+	gyroReadings.xAxisPos += (double)gyroReadings.xAxisVel/20;
+	gyroReadings.yAxisPos += (double)gyroReadings.yAxisVel/20;
+	gyroReadings.zAxisPos += (double)gyroReadings.zAxisVel/20;
+
 }

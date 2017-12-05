@@ -223,7 +223,7 @@ void LCD_drawSquare(uint16_t x_center, uint16_t y_center, uint16_t size, uint8_t
 	LCD_drawRectangle( x_center - size_2, y_center - size_2, x_center + size_2, y_center + size_2, layer_id );
 }
 
-void LCD_drawLine_alpha(uint16_t x_0, uint16_t y_0, uint16_t length,  uint16_t alpha, uint8_t layer_id)
+void LCD_drawLine_alpha(uint16_t x_0, uint16_t y_0, uint16_t length,  int16_t alpha, uint8_t layer_id)
 {
 	uint8_t x_1 = 0;
 	uint8_t y_1 = 0;
@@ -236,6 +236,13 @@ void LCD_drawLine_alpha(uint16_t x_0, uint16_t y_0, uint16_t length,  uint16_t a
 
 	LCD_drawLine(x_0, y_0, x_1, y_1, layer_id );
 }
+
+void LCD_drawLine_alpha_center(uint16_t x_0, uint16_t y_0, uint16_t length,  int16_t alpha, uint8_t layer_id)
+{
+	LCD_drawLine_alpha(x_0, y_0, length, alpha, layer_id );
+	LCD_drawLine_alpha(x_0, y_0, length, alpha-180, layer_id );
+}
+
 
 void LCD_drawLine(uint16_t x_0, uint16_t y_0, uint16_t x_1, uint16_t y_1, uint8_t layer_id)
 {

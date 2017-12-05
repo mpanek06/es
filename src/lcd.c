@@ -3,6 +3,7 @@
 #include "spi.h"
 #include "string.h"
 #include "math.h"
+#include "font16.h"
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
@@ -283,6 +284,46 @@ void LCD_drawLine(uint16_t x_0, uint16_t y_0, uint16_t x_1, uint16_t y_1, uint8_
 		}
 	}
 
+}
+
+void LCD_putString(uint16_t x, uint16_t y, uint8_t *ptr, int8_t layer_id)
+{
+
+	uint8_t col = x;
+
+	  while ((*ptr != 0))
+	  {
+	    /* Display one character on LCD */
+		  LCD_putChar(col, y, *ptr, layer_id);
+	    /* Decrement the column position by 16 */
+		  col += 16;
+	    /* Point on the next character */
+	    ptr++;;
+	  }
+
+}
+
+void LCD_putChar(uint16_t x, uint16_t y, uint8_t ASCII, int8_t layer_id)
+{
+	uint16_t x_pos = x;
+	uint16_t y_pos = y;
+
+	uint16_t *tmp_16 = (uint16_t*)(&Font16_Table[32*(ASCII-32)]);
+
+	for(uint8_t i = 0; i<16; ++i)
+	{
+		for(uint8_t j = 15; j>0; --j)
+		{
+			if(tmp_16[i] & 1<<j)
+			{
+				LCD_drawPixel(x+x_pos, y+y_pos, layer_id);
+			}
+			++x_pos;
+			x_pos%=15;
+		}
+
+		++y_pos;
+	}
 }
 
 void LCD_clearLayer( uint8_t layer_id )

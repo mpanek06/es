@@ -53,7 +53,11 @@ int main(void)
 //			LCD_drawSquare(125, 160 + gyroReadings.yAxis/350, 30, active_layer);
 //			LCD_drawSquare(195, 160 + gyroReadings.zAxis/350, 30, active_layer);
 
-			LCD_drawLine_alpha_center(120, 160, 50, 90 + -1*(gyroReadings.zAxisPos)/33, active_layer);
+//			LCD_drawLine_alpha_center(120, 160, 50, 90 + -1*(gyroReadings.zAxisPos)/33, active_layer);
+
+			LCD_putString(10, 16, (uint8_t*)"xAxis:", active_layer);
+			LCD_putString(10, 32, (uint8_t*)"yAxis:", active_layer);
+			LCD_putString(10, 48, (uint8_t*)"zAxis:", active_layer);
 
 			LCD_setActiveLayer(active_layer);
 

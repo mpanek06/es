@@ -18,6 +18,13 @@ void TIMConfiguration();
 
 extern Gyro_t gyroReadings;
 
+
+uint8_t x_0= 40;
+uint8_t y_0= 200;
+
+uint8_t x_1= 120;
+uint8_t y_1= 120;
+
 int main(void)
 {
 	SysClockConfiguration();
@@ -38,6 +45,7 @@ int main(void)
 	SysTickConfiguration();
 
 	uint8_t active_layer = 0;
+	uint16_t angle = 0;
 	while (1)
 	{
 		if( 1 == gyro_read_flag )
@@ -45,34 +53,23 @@ int main(void)
 			Gyro_ReadData();
 			gyro_read_flag = 0;
 
-			if( 1 == active_layer )
-			{
-				LCD_clearLayer(0);
+			active_layer ^= 0x1;
+			LCD_clearLayer(active_layer);
 
-				LCD_drawSquare(53,  160 + gyroReadings.xAxis/350, 30, 0);
-				LCD_drawSquare(125, 160 + gyroReadings.yAxis/350, 30, 0);
-				LCD_drawSquare(195, 160 + gyroReadings.zAxis/350, 30, 0);
+//			LCD_drawSquare(53,  160 + gyroReadings.xAxis/350, 30, active_layer);
+//			LCD_drawSquare(125, 160 + gyroReadings.yAxis/350, 30, active_layer);
+//			LCD_drawSquare(195, 160 + gyroReadings.zAxis/350, 30, active_layer);
+//
+//			LCD_drawLine( 60, 60, 120, 120, active_layer);
+//			LCD_drawLine( 120, 60, 60, 120, active_layer);
 
-				LCD_drawLine( 60, 60, 120, 120, 0);
-				LCD_drawLine( 120, 60, 60, 120, 0);
 
-				LCD_setActiveLayer(0);
-				active_layer = 0;
-			}
-			else
-			{
-				LCD_clearLayer(1);
+			LCD_drawLine_alpha(120, 160, 50, angle++, active_layer);
+			angle %= 360;
+//			LCD_drawLine( x_0, y_0, x_1, y_1, active_layer );
 
-				LCD_drawSquare(53,  160 + gyroReadings.xAxis/350, 30, 1);
-				LCD_drawSquare(125, 160 + gyroReadings.yAxis/350, 30, 1);
-				LCD_drawSquare(195, 160 + gyroReadings.zAxis/350, 30, 1);
+			LCD_setActiveLayer(active_layer);
 
-				LCD_drawLine( 60, 60, 120, 120, 1);
-				LCD_drawLine( 120, 60, 60, 120, 1);
-
-				LCD_setActiveLayer(1);
-				active_layer = 1;
-			}
 		}
 	}
 
@@ -85,6 +82,7 @@ void SysTick_Handler()
 	if(0 == cnt%10)
 	{
 		GPIOG->ODR ^= GPIO_ODR_ODR_13;
+		cnt = 0;
 	}
 
 	gyro_read_flag = 1;

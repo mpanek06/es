@@ -4,6 +4,9 @@
 #include "string.h"
 #include "math.h"
 
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#define MAX(a,b) (((a)>(b))?(a):(b))
+
 #define LCD_WIDTH	 240
 #define LCD_HEIGHT	320
 
@@ -192,7 +195,7 @@ void LCD_Delay(uint8_t del)
 	for(volatile uint32_t z=0; z<2600000; ++z ){};
 }
 
-void LCD_drawPixel(uint8_t x, uint8_t y, uint8_t layer_id)
+void LCD_drawPixel(uint16_t x, uint16_t y, uint8_t layer_id)
 {
 	if(x < LCD_WIDTH && y < LCD_HEIGHT)
 	{
@@ -200,7 +203,7 @@ void LCD_drawPixel(uint8_t x, uint8_t y, uint8_t layer_id)
 	}
 }
 
-void LCD_drawRectangle(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_t layer_id)
+void LCD_drawRectangle(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint8_t layer_id)
 {
 	uint8_t i = 0;
 	uint8_t j = 0;
@@ -214,13 +217,13 @@ void LCD_drawRectangle(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_t l
 	}
 }
 
-void LCD_drawSquare(uint8_t x_center, uint8_t y_center, uint8_t size, uint8_t layer_id)
+void LCD_drawSquare(uint16_t x_center, uint16_t y_center, uint16_t size, uint8_t layer_id)
 {
 	uint8_t size_2 = size/2;
 	LCD_drawRectangle( x_center - size_2, y_center - size_2, x_center + size_2, y_center + size_2, layer_id );
 }
 
-void LCD_drawLine_alpha(uint8_t x_0, uint8_t y_0, uint8_t length,  uint8_t alpha, uint8_t layer_id)
+void LCD_drawLine_alpha(uint16_t x_0, uint16_t y_0, uint16_t length,  uint16_t alpha, uint8_t layer_id)
 {
 	uint8_t x_1 = 0;
 	uint8_t y_1 = 0;
@@ -234,7 +237,7 @@ void LCD_drawLine_alpha(uint8_t x_0, uint8_t y_0, uint8_t length,  uint8_t alpha
 	LCD_drawLine(x_0, y_0, x_1, y_1, layer_id );
 }
 
-void LCD_drawLine(uint8_t x_0, uint8_t y_0, uint8_t x_1, uint8_t y_1, uint8_t layer_id)
+void LCD_drawLine(uint16_t x_0, uint16_t y_0, uint16_t x_1, uint16_t y_1, uint8_t layer_id)
 {
 
 	double a  = 0;
@@ -263,22 +266,13 @@ void LCD_drawLine(uint8_t x_0, uint8_t y_0, uint8_t x_1, uint8_t y_1, uint8_t la
 	}
 	else
 	{
-		a = c/d;
+		a = d/c;
 		b = y_1-a*x_1;
 
-		if(a>0)
+		for(int16_t x = MIN(x_0,x_1); x <=  MAX(x_0,x_1); ++x)
 		{
-			for(int16_t x = x_0; x < x_1; ++x)
-			{
-				y = a*x + b;
-				LCD_drawPixel(x, y, layer_id);
-			}
-		} else {
-			for(int16_t x = x_0; x > x_1; --x)
-			{
-				y = a*x + b;
-				LCD_drawPixel(x, y, layer_id);
-			}
+			y = a*x + b;
+			LCD_drawPixel(x, y, layer_id);
 		}
 	}
 

@@ -157,11 +157,11 @@ void LCD_Config(void);
 void LCD_Delay(uint8_t del);
 void LCD_GPIO_Config(void);
 
-void LCD_drawPixel(uint8_t x, uint8_t y, uint8_t layer_id);
-void LCD_drawRectangle(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_t layer_id);
-void LCD_drawSquare(uint8_t x_center, uint8_t y_center, uint8_t size, uint8_t layer_id);
-void LCD_drawLine(uint8_t x_0, uint8_t y_0, uint8_t x_1, uint8_t y_1, uint8_t layer_id);
-void LCD_drawLine_alpha(uint8_t x_0, uint8_t y_0, uint8_t length,  uint8_t alpha, uint8_t layer_id);
+void LCD_drawPixel(uint16_t x, uint16_t y, uint8_t layer_id);
+void LCD_drawRectangle(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint8_t layer_id);
+void LCD_drawSquare(uint16_t x_center, uint16_t y_center, uint16_t size, uint8_t layer_id);
+void LCD_drawLine(uint16_t x_0, uint16_t y_0, uint16_t x_1, uint16_t y_1, uint8_t layer_id);
+void LCD_drawLine_alpha(uint16_t x_0, uint16_t y_0, uint16_t length,  uint16_t alpha, uint8_t layer_id);
 void LCD_clearLayer(uint8_t layer_id);
 void LCD_setActiveLayer(uint8_t layer_id);
 

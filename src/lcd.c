@@ -298,7 +298,7 @@ void LCD_putString(uint16_t x, uint16_t y, uint8_t *ptr, int8_t layer_id)
 	    /* Decrement the column position by 16 */
 		  col += 16;
 	    /* Point on the next character */
-	    ptr++;;
+	    ++ptr;
 	  }
 
 }

@@ -3,6 +3,8 @@
 #include "spi.h"
 #include "gyro.h"
 #include "asia.h"
+#include "string.h"
+#include "stdio.h"
 
 volatile uint32_t cnt = 0;
 
@@ -14,6 +16,8 @@ void GPIOConfiguration();
 void ExItConfiguration();
 
 void TIMConfiguration();
+
+void Display_Gyro_Reading_LCD(uint8_t active_layer);
 
 extern Gyro_t gyroReadings;
 
@@ -55,9 +59,7 @@ int main(void)
 
 //			LCD_drawLine_alpha_center(120, 160, 50, 90 + -1*(gyroReadings.zAxisPos)/33, active_layer);
 
-			LCD_putString(10, 16, (uint8_t*)"xAxis:", active_layer);
-			LCD_putString(10, 32, (uint8_t*)"yAxis:", active_layer);
-			LCD_putString(10, 48, (uint8_t*)"zAxis:", active_layer);
+			Display_Gyro_Reading_LCD(active_layer);
 
 			LCD_setActiveLayer(active_layer);
 
@@ -66,6 +68,21 @@ int main(void)
 
 	return 0;
 } /* main */
+
+void Display_Gyro_Reading_LCD(uint8_t active_layer)
+{
+	uint8_t tmpString[50];
+
+	memset(tmpString, 0, 50);
+	sprintf((char*)tmpString, "xAxis: %d", gyroReadings.xAxisVel);
+	LCD_putString(10, 16, tmpString, active_layer);
+
+	sprintf((char*)tmpString, "yAxis: %d", gyroReadings.yAxisVel);
+	LCD_putString(10, 32, tmpString, active_layer);
+
+	sprintf((char*)tmpString, "zAxis: %d", gyroReadings.zAxisVel);
+	LCD_putString(10, 48, tmpString, active_layer);
+}
 
 void SysTick_Handler()
 {
